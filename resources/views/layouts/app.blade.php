@@ -267,7 +267,7 @@ app.blade.php
     <div class="sidebar" id="sidebar">
         <div class="logo">SEGGAY</div>
         <ul>
-            <li><a href="{{ route('admin.stories') }}">📚 Quản lý truyện</a></li>
+            <li><a href="{{ route('stories') }}">📚 Quản lý truyện</a></li>
         </ul>
     </div>
 

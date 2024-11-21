@@ -89,7 +89,7 @@
         <div class="toggle-btn" id="sidebar-toggle">☰</div>
         <ul>
             <li><a href="{{ route('dashboard') }}">🏠 Home</a></li>
-            <li><a href="{{ route('admin.stories') }}">📚 Quản lý truyện</a></li>
+            <li><a href="{{ route(' stories') }}">📚 Quản lý truyện</a></li>
             <!-- Các liên kết khác -->
         </ul>
     </div>

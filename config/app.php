@@ -123,4 +123,13 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+
+    'Providers' => [
+        Kawankoding\Fcm\FcmServiceProvider::class,
+        Kreait\Laravel\Firebase\ServiceProvider::class,
+    ],
+
+    'aliases' => [
+        'Fcm' => Kawankoding\Fcm\FcmFacade::class,
+    ],
 ];

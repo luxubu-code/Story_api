@@ -11,6 +11,13 @@ use Illuminate\Auth\Events\Validated;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
+use Kreait\Firebase\Auth as FirebaseAuth;
+use InvalidArgumentException;
+use Google_Client;
+
+
 
 class AuthController extends Controller
 {
@@ -19,7 +26,8 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:8',
+            'password' => 'required|string|min:8',
+            // 'password' => 'required|string|min:8|confirmed',
         ]);
         if ($validator->fails()) {
 
@@ -32,12 +40,9 @@ class AuthController extends Controller
             );
         }
         try {
-            $dt        = Carbon::now();
-            $join_date = $dt->toDayDateTimeString();
-
             $user = new User();
-            $user->name         = $request->name;
             $user->email        = $request->email;
+            $user->name         = 'user_' . Str::random(5);
             $user->password     = Hash::make($request->password);
             $user->save();
 
@@ -53,11 +58,72 @@ class AuthController extends Controller
             return response()->json([
                 'response_code' => '200',
                 'status'        => 'error',
-                'error'        => $e->getMessage()  ,
+                'error'        => $e->getMessage(),
                 'message'       => 'fail Register',
             ]);
         }
     }
+
+    public function googleAuth(Request $request)
+    {
+        // Lấy idToken từ request
+        $idToken = $request->input('idToken');
+
+        if (!$idToken) {
+            return response()->json([
+                'message' => 'ID token is required',
+                'error' => 'The provided ID token is missing or invalid.'
+            ], 400);
+        }
+
+        try {
+            // Giải mã ID token mà bạn nhận được từ Google
+            $decodedToken = json_decode(base64_decode(str_replace('_', '/', str_replace('-', '+', explode('.', $idToken)[1]))));
+
+            if (isset($decodedToken->sub)) {
+                $googleId = $decodedToken->sub; // Google ID
+                $email = $decodedToken->email; // Email của người dùng
+                $name = $decodedToken->name; // Tên của người dùng
+
+                // Kiểm tra và cập nhật/tạo tài khoản người dùng
+                $user = User::updateOrCreate(
+                    ['email' => $email], // Kiểm tra dựa trên email
+                    [
+                        'google_id' => $googleId,
+                        'name' => $name,
+                        'password' => null
+                    ]
+                );
+
+                // Đăng nhập người dùng
+                Auth::login($user);
+
+                // Tạo access token cho người dùng đã đăng nhập
+                $accessToken = $user->createToken('authToken')->accessToken;
+
+                // Trả về access token và thông tin người dùng
+                return response()->json([
+                    'token_type' => 'Bearer',
+                    'user' => $user,
+                    'access_token' => $accessToken,
+                ], 200);
+            } else {
+                return response()->json([
+                    'message' => 'Invalid ID token',
+                    'error' => 'The provided ID token could not be verified. Please ensure the token is valid.'
+                ], 401);
+            }
+        } catch (\Exception $e) {
+            // Bắt tất cả các lỗi khác
+            return response()->json([
+                'message' => 'An error occurred during authentication',
+                'error' => $e->getMessage(),
+                'stack_trace' => $e->getTraceAsString() // Hiển thị chi tiết hơn lỗi stack trace (tuỳ chọn)
+            ], 500);
+        }
+    }
+
+
 
     public function login(Request $request)
     {
@@ -78,8 +144,8 @@ class AuthController extends Controller
                     'response_code' => '200',
                     'status'        => 'success',
                     'message'       => 'Success Login',
-                    'user_infor'    => $user,
-                    'token'         => $accessToken
+                    'user'    => $user,
+                    'access_token'         => $accessToken
                 ];
                 return response()->json($data);
             } else {
@@ -103,7 +169,18 @@ class AuthController extends Controller
             return response()->json($data);
         }
     }
-
+    public function store(Request $request)
+    {  // Ensure we get an instance of User
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if ($user) {
+            $user->fcm_token = $request->token;
+            $user->save();
+            return response()->json(['success' => true, 'message' => 'FCM Token saved successfully']);
+        } else {
+            return response()->json(['success' => false, 'message' => 'User not found'], 404);
+        }
+    }
 
     /** user info */
     public function userInfo()

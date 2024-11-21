@@ -33,7 +33,21 @@ return [
         'sync' => [
             'driver' => 'sync',
         ],
+        'high' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'high',
+            'retry_after' => 90,
+            'block_for' => null,
+        ],
 
+        'default' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'default',
+            'retry_after' => 90,
+            'block_for' => null,
+        ],
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_QUEUE_CONNECTION'),

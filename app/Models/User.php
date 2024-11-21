@@ -17,9 +17,11 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'google_id',
         'name',
         'email',
         'password',
+        'fcm_token',
     ];
 
     /**
@@ -46,5 +48,8 @@ class User extends Authenticatable
     }
     public function ratings(){
         return $this->hasMany(Ratings::class, 'user_id', 'id');
+    }
+    public function comments(){
+        return $this->hasMany(Comment::class, 'user_id', 'id');
     }
 }

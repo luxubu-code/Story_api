@@ -9,7 +9,7 @@ class FavoriteStories extends Model
 {
     protected $table = 'favorite_stories';
     protected $primaryKey = 'id';
-    protected $fillable = ['id','user_id', 'story_id','read_at','created_at'];
+    protected $fillable = ['id','user_id', 'story_id','read_at','created_at','file_name','base_url'];
     public function user(){
         return $this->belongsTo(User::class, 'user_id', 'id');
     }

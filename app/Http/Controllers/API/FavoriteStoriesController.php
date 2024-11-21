@@ -18,9 +18,9 @@ class FavoriteStoriesController extends Controller
 
         $favourite_stories_data = $favourite_stories->map(function ($favouriteStory) {
             return [
-                'image_path' => $favouriteStory->story->image_path,
-                'story_id' => $favouriteStory->story_id,
+                'id' => $favouriteStory->story_id,
                 'title' => $favouriteStory->story->title,
+                'image_path' => $favouriteStory->base_url . $favouriteStory->file_name,
                 'read_at' => Carbon::parse($favouriteStory->story->read_at)->format('Y-m-d'),
                 'updated_at' => Carbon::parse($favouriteStory->story->updated_at)->format('Y-m-d')
             ];
@@ -47,6 +47,7 @@ class FavoriteStoriesController extends Controller
         $validatedData = $request->validate([
             'story_id' => 'required|exists:stories,story_id',
         ]);
+        $story = Story::findOrFail($validatedData['story_id']);
         $exists = FavoriteStories::where('user_id', $user->id)->where('story_id', $request->story_id)->exists();
         if ($exists) {
             return response()->json([
@@ -58,6 +59,9 @@ class FavoriteStoriesController extends Controller
             $favourite_story = FavoriteStories::create([
                 'user_id' => $user->id,
                 'story_id' => $validatedData['story_id'],
+                'read_at' => Carbon::now(),
+                'base_url' => $story->base_url,
+                'file_name' => $story->file_name,
             ]);
             return response()->json([
                 'response_code' => '200',
