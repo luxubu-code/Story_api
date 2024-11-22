@@ -159,7 +159,7 @@
                     <span>{{ $chapter['title'] }}</span>
                     <small>Views: {{ $chapter['views'] }} | Created:
                         {{ \Carbon\Carbon::parse($chapter['created_at'])->format('F d, Y') }}</small>
-                    <form method="POST" action="{{ route('chapters.destroy', $chapter['id']) }}"
+                    <form method="POST" action="{{ route('stories.chapters.destroy', $chapter['id']) }}"
                         onsubmit="return confirm('Are you sure you want to delete this chapter?');">
                         @csrf
                         @method('DELETE')

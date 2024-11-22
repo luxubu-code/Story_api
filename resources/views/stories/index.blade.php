@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stories List</title>
     <!-- Include Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* Custom styles for better appearance */
@@ -71,58 +73,81 @@
             box-shadow: none;
             border-radius: 0.25rem;
         }
+
+        /* Nội dung chính */
+        .main-content {
+            margin-left: 270px;
+            padding: 30px;
+        }
+
+        /* Thẻ Card */
+        .card {
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 250px;
+            background-color: #ffffff;
+            padding: 20px 10px;
+            border-right: 1px solid #dee2e6;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container mt-5">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a href="{{ route('stories.index') }}" class="nav-link">
+                    <i class="bi bi-journal-text"></i> Stories
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('users.index') }}" class="nav-link">
+                    <i class="bi bi-people"></i> Users
+                </a>
+            </li>
+        </ul>
+    </div>
 
-        <!-- Page Header -->
-        <div class="page-header d-flex justify-content-between align-items-center">
+    <!-- Nội dung chính -->
+    <div class="main-content">
+        <!-- Tiêu đề -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h3">Stories List</h1>
-
-            <!-- Search Form -->
+            <!-- Tìm kiếm -->
             <form class="d-flex" method="GET" action="{{ route('stories.search') }}">
                 <input class="form-control me-2" type="search" name="search" placeholder="Search stories..."
                     aria-label="Search">
                 <button class="btn btn-outline-primary" type="submit">Search</button>
             </form>
-
-            <!-- Button to trigger modal to add new story -->
+            <!-- Nút thêm Story -->
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStoryModal">
                 Add New Story
             </button>
         </div>
 
-        <!-- Flash Messages for Success or Error -->
-        @if (session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
-        @elseif(session('error'))
-            <div class="alert alert-danger">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <!-- Stories List Section -->
+        <!-- Danh sách Stories -->
         <div class="row">
             @if (empty($storiesArray))
-                <p class="text-center">No stories available.</p>
+                <p class="text-center">No stories available.</p>    
             @else
                 @foreach ($storiesArray as $story)
                     <div class="col-md-4 mb-4">
                         <div class="card h-100 shadow-sm">
-                            <!-- Make the image clickable -->
                             <a href="{{ route('stories.show', $story['id']) }}">
                                 <img src="{{ $story['image_path'] }}" class="card-img-top" alt="{{ $story['title'] }}"
                                     style="max-height: 200px; object-fit: cover;">
                             </a>
                             <div class="card-body">
-                                <!-- Make the story title a clickable link to the show page -->
-                                <h5 class="card-title">
-                                    {{ $story['title'] }}</a>
-                                </h5>
+                                <h5 class="card-title">{{ $story['title'] }}</h5>
                                 <p class="card-text"><strong>Author:</strong> {{ $story['author'] }}</p>
                                 <p class="card-text"><strong>Views:</strong> {{ $story['views'] ?? 'N/A' }}</p>
                                 <p class="card-text">{{ \Illuminate\Support\Str::limit($story['description'], 100) }}
@@ -138,7 +163,8 @@
                 @endforeach
             @endif
         </div>
-
+    </div>
+    <div class="container mt-5">
         <!-- Modal for Adding New Story -->
         <div class="modal fade" id="addStoryModal" tabindex="-1" aria-labelledby="addStoryModalLabel"
             aria-hidden="true">

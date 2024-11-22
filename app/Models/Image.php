@@ -15,13 +15,5 @@ class Image extends Model
     {
         return $this->belongsTo(Chapter::class, 'chapter_id', 'chapter_id');
     }
-    // use MediaAlly;
-    // protected $table = 'images';
-    // protected $primaryKey = 'image_id';
-    // protected $fillable = ['image_id', 'chapter_id', 'base_url','file_name'];
-    // public function chapter()
-    // {
-    //     return $this->belongsTo(Chapter::class, 'chapter_id', 'chapter_id');
-    // }
 
 }
