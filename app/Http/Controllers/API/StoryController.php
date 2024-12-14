@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Exception;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class StoryController extends Controller
 
@@ -20,18 +22,20 @@ class StoryController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $datastories = Story::with(['ratings', 'favorites', 'categories'])->get();
+            $datastories = Story::with(['ratings', 'favorites', 'categories', 'chapters'])->get();
             $stories = $datastories->map(function ($story) {
                 $averageRating = $story->ratings->avg('rating') ?? 0;
                 return [
                     'id' => $story->story_id,
                     'title' => $story->title,
                     'author' => $story->author,
-                    'views' => $story->views,
+                    'views' => $story->views ?? 0,
                     'description' => $story->description,
                     'image_path' => $story->base_url . $story->file_name,
                     'created_at' => $story->created_at,
                     'averageRating' => $averageRating,
+                    'totalChapter' => $story->chapters->count(),
+                    'favourite' => $story->favorites->count(),
                     'categories' => $story->categories->map(function ($categories) {
                         return [
                             'title' => $categories->title
@@ -71,8 +75,8 @@ class StoryController extends Controller
                 'author' => $story->author,
                 'description' => $story->description,
                 'status' => $story->status ?? 0,
-                'views' => $views,
-                'image_path' => $story->base_url . $story->file_name,
+                'views' => $views ?? 0,
+                'image_path' => $story->base_url . $story->file_name ?? 'null',
                 'averageRating' => $averageRating,
                 'favourite' => $favouriteCount,
                 'chapter' => $story->chapters->map(
@@ -80,7 +84,7 @@ class StoryController extends Controller
                         return [
                             'id' => $chapter->chapter_id,
                             'title' => $chapter->title,
-                            'views' => $chapter->views??0,
+                            'views' => $chapter->views ?? 0,
                             'created_at' => $chapter->created_at
                         ];
                     }
@@ -95,7 +99,6 @@ class StoryController extends Controller
                 'ratings' => $story->ratings() ? $story->ratings->map(
                     function ($rating) {
                         return [
-                            'id' => $rating->id,
                             'user_id' => $rating->user_id,
                             'rating' => $rating->rating,
                             'created_at' => $rating->created_at
@@ -210,48 +213,51 @@ class StoryController extends Controller
             ], 500);
         }
     }
-
     public function destroy($id): JsonResponse
     {
         try {
             $story = Story::findOrFail($id);
-            foreach ($story->chapters as $chapter) {
-                $chapter->images()->delete();
-                $chapter->delete();
-            }
-            foreach ($story->favorites as $favorite) {
-                $favorite->delete();
-            }
-            foreach ($story->ratings as $rating) {
-                $rating->delete();
-            }
-            foreach ($story->comments as $comment) {
-                $comment->delete();
-            }
-            foreach ($story->readingHistory as $readingHistory) {
-                $readingHistory->delete();
-            }
-            $story->categories()->detach();
-            $story->delete();
-            if (!$story) {
+            DB::beginTransaction();
+            try {
+                Cloudinary::destroy($story->file_name);
+                // Xóa tất cả quan hệ và dữ liệu liên quan
+                $story->chapters()->each(function ($chapter) {
+                    $chapter->images()->delete();
+                    $chapter->delete();
+                });
+                // Xóa các quan hệ một-nhiều sử dụng delete() trực tiếp
+                $story->favorites()->delete();
+                $story->ratings()->delete();
+                $story->comments()->delete();
+                $story->readingHistory()->delete();
+                // Xóa quan hệ nhiều-nhiều
+                $story->categories()->detach();
+                // Xóa story chính
+                $story->delete();
+
+                DB::commit();
+
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'Story not found.'
-                ], 404);
+                    'status' => 'success',
+                    'message' => 'Xóa truyện thành công'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
             }
+        } catch (ModelNotFoundException $e) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Story deleted successfully.'
-            ]);
+                'status' => 'error',
+                'message' => 'Không tìm thấy truyện'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Something went wrong while deleting the story.',
+                'message' => 'Đã xảy ra lỗi khi xóa truyện',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
-
     public function search(Request $request): JsonResponse
     {
         try {
@@ -262,7 +268,7 @@ class StoryController extends Controller
                     $q->where('title', 'like', '%' . $searchInput . '%')
                         ->orWhere('author', 'like', '%' . $searchInput . '%');
                 });
-            } 
+            }
             $dataSearch = $query->with(['ratings', 'favorites', 'categories'])->get();
             $stories = $dataSearch->map(function ($story) {
                 $averageRating = $story->ratings->avg('rating') ?? 0;

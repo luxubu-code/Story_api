@@ -32,12 +32,12 @@ class ImageController extends Controller
         ], 200);
     }
     public function upload(Request $request, $story_id, ZipFileService $zipFileService)
-    
+
     {
         $story = Story::findOrFail($story_id);
         $request->validate([
             'title' => 'required',
-            'images_zip' => 'required|file|mimes:zip|max:10240',
+            'file_zip' => 'required|file|mimes:zip|max:10240',
         ]);
         try {
             $chapter = Chapter::create([
@@ -48,14 +48,13 @@ class ImageController extends Controller
             foreach ($favoriteStories as $favorite) {
                 $notificationSent =  SendNotificationService::sendNotification(
                     'A new chapter has been added to the story: ' . $story->title,
-                    'A new chapter title :'.$chapter->title,
+                    'A new chapter title :' . $chapter->title,
                     $favorite->user->fcm_token
                 );
-    
+
                 if (json_decode($notificationSent)->status !== 'success') {
                     Log::error('Failed to send notification to user: ' . $favorite->user->id);
                 }
-                
             }
             if (!$chapter) {
                 return response()->json([
@@ -63,7 +62,7 @@ class ImageController extends Controller
                     'message' => 'Failed to create chapter.',
                 ], 404);
             }
-            $zipFile = $request->file('images_zip');
+            $zipFile = $request->file('file_zip');
             $validMimeTypes = ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed'];
             if (!in_array($zipFile->getClientMimeType(), $validMimeTypes)) {
                 return response()->json([
@@ -71,7 +70,7 @@ class ImageController extends Controller
                     'message' => 'File is not a ZIP format.',
                 ], 404);
             }
-            
+
             $imagePaths = $zipFileService->extractImages($zipFile->getRealPath(), 'temp_images');
             if (empty($imagePaths)) {
                 return response()->json([
@@ -101,8 +100,8 @@ class ImageController extends Controller
     }
     public function destroy($chapter_id)
     {
-        $chapter = Chapter::findOrFail($chapter_id);    
-        if($chapter->images()->count() > 0){
+        $chapter = Chapter::findOrFail($chapter_id);
+        if ($chapter->images()->count() > 0) {
             $chapter->images()->delete();
         }
         $chapter->delete();

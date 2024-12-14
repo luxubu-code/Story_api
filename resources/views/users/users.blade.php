@@ -1,112 +1,181 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('welcome')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Management</title>
-    <!-- Include Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
+@section('title', 'Users')
 
-        .container {
-            max-width: 1200px;
-        }
+@section('content')
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 text-primary">
+                        <i class="fas fa-users me-2"></i>Danh Sách Người Dùng
+                    </h1>
+                    <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </a>
+                </div>
 
-        .page-header {
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 15px;
-            margin-bottom: 30px;
-        }
-
-        .nav-tabs {
-            margin-bottom: 20px;
-        }
-
-        .user-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .user-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container mt-5">
-
-        <!-- Page Header -->
-        <div class="page-header d-flex justify-content-between align-items-center">
-            <h1 class="h3">User Management</h1>
-
-            {{-- <!-- Search Form -->
-            <form class="d-flex" method="GET" action="{{ route('users.search') }}">
-                <input class="form-control me-2" type="search" name="search" placeholder="Search users..." aria-label="Search">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
-            </form> --}}
-        </div>
-
-        <!-- Flash Messages -->
-        @if (session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
-        @elseif(session('error'))
-            <div class="alert alert-danger">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <!-- Users List Section -->
-        <div class="row">
-            @if (empty($usersArray))
-                <p class="text-center">No users found.</p>
-            @else
-                @foreach ($usersArray as $user)
-                    <div class="col-md-4 mb-4">
-                        <div class="card user-card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ $user['name'] }}</h5>
-                                <p class="card-text"><strong>Email:</strong> {{ $user['email'] }}</p>
-                                <p class="card-text"><strong>Registered:</strong>
-                                    {{ \Carbon\Carbon::parse($user['created_at'])->format('F d, Y') }}
-                                </p>
+                <!-- User List -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        @if ($users->isEmpty())
+                            <div class="alert alert-info text-center" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>Không có người dùng nào.
                             </div>
-                            <div class="card-footer d-flex justify-content-between">
-                                <small class="text-muted">
-                                    {{ $user['google_id'] ? 'Google Account' : 'Standard Account' }}
-                                </small>
-                                <div>
-                                    <a href="{{ route('users.edit', $user['id']) }}"
-                                        cla     ss="btn btn-sm btn-outline-primary me-2">
-                                        Edit
-                                    </a>
-                                    <form action="{{ route('users.delete', $user['id']) }}" method="POST"
-                                        style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Are you sure you want to delete this user?')">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
+                        @else
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tên</th>
+                                            <th>Email</th>
+                                            <th>Ngày Sinh</th>
+                                            <th>Ngày Đăng Ký</th>
+                                            <th>Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($users as $user)
+                                            <tr>
+                                                <td>{{ $user->name }}</td>
+                                                <td>{{ $user->email }}</td>
+                                                <td>{{ $user->date_of_birth ? date('d/m/Y', strtotime($user->date_of_birth)) : 'Chưa cập nhật' }}
+                                                </td>
+                                                <td>{{ $user->created_at->format('d/m/Y') }}</td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-primary"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#editUser{{ $user->id }}">
+                                                        <i class="fas fa-edit me-1"></i>Sửa
+                                                    </button>
+                                                </td>
+                                            </tr>
+
+                                            <!-- Edit Modal -->
+                                            <div class="modal fade" id="editUser{{ $user->id }}" tabindex="-1"
+                                                aria-labelledby="editUserLabel{{ $user->id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form action="{{ route('users.update', $user->id) }}" method="POST"
+                                                            class="user-update-form">
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title"
+                                                                    id="editUserLabel{{ $user->id }}">Cập Nhật Thông
+                                                                    Tin
+                                                                </h5>
+                                                                <button type="button" class="btn-close"
+                                                                    data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label for="name{{ $user->id }}"
+                                                                        class="form-label">Tên</label>
+                                                                    <input type="text" class="form-control"
+                                                                        id="name{{ $user->id }}" name="name"
+                                                                        value="{{ $user->name }}" required>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="date_of_birth{{ $user->id }}"
+                                                                        class="form-label">Ngày Sinh</label>
+                                                                    <input type="date" class="form-control"
+                                                                        id="date_of_birth{{ $user->id }}"
+                                                                        name="date_of_birth"
+                                                                        value="{{ $user->date_of_birth }}" required>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="avatar{{ $user->id }}"
+                                                                        class="form-label">Ảnh Đại Diện</label>
+                                                                    <input type="file" class="form-control"
+                                                                        id="avatar{{ $user->id }}" name="avatar"
+                                                                        accept="image/*">
+                                                                    @if ($user->avatar_url)
+                                                                        <div class="mt-2">
+                                                                            <img src="{{ $user->avatar_url }}"
+                                                                                alt="Avatar" class="rounded-circle"
+                                                                                style="width: 64px; height: 64px;">
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Đóng</button>
+                                                                <button type="submit" class="btn btn-primary">Lưu Thay
+                                                                    Đổi</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </tbody>
+                                </table>
                             </div>
-                        </div>
+
+                            <!-- Pagination -->
+                            <div class="d-flex justify-content-center mt-4">
+                                {{ $users->links() }}
+                            </div>
+                        @endif
                     </div>
-                @endforeach
-            @endif
+                </div>
+            </div>
         </div>
     </div>
+@endsection
 
-    <!-- Include Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-</body>
+@push('styles')
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        .table th,
+        .table td {
+            vertical-align: middle;
+        }
 
-</html>
+        .modal-header {
+            background-color: #f8f9fa;
+        }
+    </style>
+@endpush
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle form submission
+            const forms = document.querySelectorAll('.user-update-form');
+            forms.forEach(form => {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(this);
+                    const userId = this.action.split('/').pop();
+
+                    try {
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector(
+                                    'meta[name="csrf-token"]').content
+                            }
+                        });
+
+                        const data = await response.json();
+
+                        if (data.status === 'success') {
+                            alert('Cập nhật thành công!');
+                            window.location.reload();
+                        } else {
+                            alert('Có lỗi xảy ra: ' + data.message);
+                        }
+                    } catch (error) {
+                        alert('Có lỗi xảy ra khi cập nhật thông tin');
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

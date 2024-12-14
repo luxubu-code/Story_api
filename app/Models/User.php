@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
+
 class User extends Authenticatable
 {
-    use HasApiTokens,HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +23,8 @@ class User extends Authenticatable
         'email',
         'password',
         'fcm_token',
+        'avatar_url',
+        'date_of_birth',
     ];
 
     /**
@@ -46,10 +49,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-    public function ratings(){
+    public function ratings()
+    {
         return $this->hasMany(Ratings::class, 'user_id', 'id');
     }
-    public function comments(){
+    public function comments()
+    {
         return $this->hasMany(Comment::class, 'user_id', 'id');
     }
 }

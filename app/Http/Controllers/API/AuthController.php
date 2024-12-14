@@ -25,7 +25,7 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email'    => 'required|email|unique:users,email',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             // 'password' => 'required|string|min:8|confirmed',
         ]);
@@ -34,22 +34,22 @@ class AuthController extends Controller
             return response()->json(
                 [
                     'response_code' => '400',
-                    'status'        => 'error',
-                    'message'       => $validator->errors(),
+                    'status' => 'error',
+                    'message' => $validator->errors(),
                 ]
             );
         }
         try {
             $user = new User();
-            $user->email        = $request->email;
-            $user->name         = 'user_' . Str::random(5);
-            $user->password     = Hash::make($request->password);
+            $user->email = $request->email;
+            $user->name = 'user_' . Str::random(5);
+            $user->password = Hash::make($request->password);
             $user->save();
 
             return response()->json([
                 'response_code' => '200',
-                'status'        => 'success',
-                'message'       => 'success Register',
+                'status' => 'success',
+                'message' => 'success Register',
             ]);
         } catch (\Exception $e) {
             Log::info($e);
@@ -57,9 +57,9 @@ class AuthController extends Controller
 
             return response()->json([
                 'response_code' => '200',
-                'status'        => 'error',
-                'error'        => $e->getMessage(),
-                'message'       => 'fail Register',
+                'status' => 'error',
+                'error' => $e->getMessage(),
+                'message' => 'fail Register',
             ]);
         }
     }
@@ -128,13 +128,13 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|string',
+            'email' => 'required|string',
             'password' => 'required|string',
         ]);
 
         try {
-            $email     = $request->email;
-            $password  = $request->password;
+            $email = $request->email;
+            $password = $request->password;
 
             if (Auth::attempt(['email' => $email, 'password' => $password])) {
                 /** @var \App\Models\User */
@@ -142,17 +142,17 @@ class AuthController extends Controller
                 $accessToken = $user->createToken($user->email)->accessToken;
                 $data = [
                     'response_code' => '200',
-                    'status'        => 'success',
-                    'message'       => 'Success Login',
-                    'user'    => $user,
-                    'access_token'         => $accessToken
+                    'status' => 'success',
+                    'message' => 'Success Login',
+                    'user' => $user,
+                    'access_token' => $accessToken
                 ];
                 return response()->json($data);
             } else {
                 $data = [
                     'response_code' => '401',
-                    'status'        => 'error',
-                    'message'       => 'Unauthorised'
+                    'status' => 'error',
+                    'message' => 'Unauthorised'
                 ];
                 return response()->json($data);
             }
@@ -162,9 +162,9 @@ class AuthController extends Controller
 
             $data = [
                 'response_code' => '500',  // Nên sử dụng mã 500 để chỉ lỗi server
-                'status'        => 'error',
-                'message'       => 'Fail Login',
-                'error'         => $e->getMessage()
+                'status' => 'error',
+                'message' => 'Fail Login',
+                'error' => $e->getMessage()
             ];
             return response()->json($data);
         }
@@ -188,18 +188,52 @@ class AuthController extends Controller
         try {
             $userDataList = User::latest()->paginate(10);
             $data = [];
-            $data['response_code']  = '200';
-            $data['status']         = 'success';
-            $data['message']        = 'success get user list';
+            $data['response_code'] = '200';
+            $data['status'] = 'success';
+            $data['message'] = 'success get user list';
             $data['data_user_list'] = $userDataList;
             return response()->json($data);
         } catch (\Exception $e) {
             Log::info($e);
             $data = [];
-            $data['response_code']  = '400';
-            $data['status']         = 'error';
-            $data['message']        = 'fail get user list';
+            $data['response_code'] = '400';
+            $data['status'] = 'error';
+            $data['message'] = 'fail get user list';
             return response()->json($data);
+        }
+    }
+    public function update(Request $request)
+    {
+
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'response_code' => '404',
+                    'status' => 'error',
+                    'message' => 'User not found',
+                ], 404);
+            }
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'date_of_birth' => 'required|date',
+                'avatar_url' => 'required|string',
+            ]);
+            /** @var \App\Models\User|null $user */
+            $user->update($validatedData);
+            return response()->json([
+                'response_code' => '200',
+                'status' => 'success',
+                'message' => 'User updated successfully',
+                'data' => $user,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'response_code' => '422',
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         }
     }
 }

@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('app')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $story['title'] }} - Story Details</title>
-    <!-- Include Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+@section('title', $story['title'] . ' - Story Details')
+
+@push('styles')
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -101,96 +95,23 @@
             background-color: #0056b3;
         }
     </style>
-</head>
+@endpush
 
-<body>
-    <div class="container mt-5">
-        <!-- Back and Delete Buttons -->
-        <div class="d-flex justify-content-between mb-3">
-            <!-- Back Button -->
-            <a href="{{ route('stories.index') }}" class="btn btn-secondary">Back</a>
+@section('content')
 
-            <!-- Delete Button -->
-            <form method="POST" action="{{ route('stories.destroy', $story['id']) }}"
-                onsubmit="return confirm('Are you sure you want to delete this story?');">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger">Delete Story</button>
-            </form>
-        </div>
-        <!-- Story Details -->
-        <div class="row story-details">
-            <div class="col-md-4">
-                <img src="{{ $story['image_path'] }}" alt="{{ $story['title'] }}" class="img-fluid">
-            </div>
-            <div class="col-md-8">
-                <h1>{{ $story['title'] }}</h1>
-                <p><strong>Author:</strong> {{ $story['author'] }}</p>
-                <p><strong>Description:</strong> {{ $story['description'] }}</p>
-                <p><strong>Views:</strong> {{ $story['views'] }}</p>
-                <p><strong>Average Rating:</strong> {{ $story['averageRating'] }}</p>
-                <p><strong>Categories:</strong>
-                    @foreach ($story['categories'] as $category)
-                        <span class="badge">{{ $category['title'] }}</span>
-                    @endforeach
-                </p>
-                <p><strong>Status:</strong> {{ $story['status'] }}</p>
-            </div>
-        </div>
+    <!-- Back and Delete Buttons -->
+    @include('stories.partials.back_delete_buttons', ['story' => $story])
 
-        <!-- Flash Messages for Success or Error -->
-        @if (session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
-        @elseif(session('error'))
-            <div class="alert alert-danger">
-                {{ session('error') }}
-            </div>
-        @endif
+    <!-- Story Details -->
+    @include('stories.partials.story_details', ['story' => $story])
 
-        <!-- Chapters List -->
-        <div class="chapter-list-header">
-            <h2>Chapters</h2>
-        </div>
-        <ul class="list-group mb-4">
-            @foreach ($story['chapter'] as $chapter)
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>{{ $chapter['title'] }}</span>
-                    <small>Views: {{ $chapter['views'] }} | Created:
-                        {{ \Carbon\Carbon::parse($chapter['created_at'])->format('F d, Y') }}</small>
-                    <form method="POST" action="{{ route('stories.chapters.destroy', $chapter['id']) }}"
-                        onsubmit="return confirm('Are you sure you want to delete this chapter?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                    </form>
-                </li>
-            @endforeach
-        </ul>
+    <!-- Flash Messages -->
+    @include('stories.partials.flash_messages')
 
-        <!-- Upload New Chapter -->
-        <div class="chapter-list-header">
-            <h2>Upload New Chapter</h2>
-        </div>
-        <form method="POST" action="{{ route('stories.upload', $story['id']) }}" enctype="multipart/form-data">
-            @csrf
-            <div class="mb-3">
-                <label for="title" class="form-label">Chapter Title</label>
-                <input type="text" class="form-control" id="title" name="title" required>
-            </div>
-            <div class="mb-3">
-                <label for="images_zip" class="form-label">Upload Images (ZIP File)</label>
-                <input type="file" class="form-control" id="images_zip" name="images_zip" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Upload Chapter</button>
-        </form>
+    <!-- Chapters List -->
+    @include('stories.partials.chapter_list', ['story' => $story])
 
-    </div>
+    <!-- Upload New Chapter -->
+    @include('stories.partials.upload_chapter', ['story' => $story])
 
-    <!-- Include Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-</body>
-
-</html>
+@endsection

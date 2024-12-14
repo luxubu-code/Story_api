@@ -14,7 +14,12 @@ class CommentController extends Controller
     public function index($id)
     {
         try {
-            $comments = Comment::where('story_id',$id)->with('user')->with('replies')->whereNull('parent_id')->orderBy('created_at', 'desc')->paginate(15);
+            $comments = Comment::where('story_id', $id)
+                ->with('user')
+                ->with('replies')
+                ->whereNull('parent_id')
+                ->orderBy('created_at', 'desc')
+                ->paginate(15);
             return response()->json([
                 'message' => 'Success',
                 'data' => CommentResource::collection($comments),

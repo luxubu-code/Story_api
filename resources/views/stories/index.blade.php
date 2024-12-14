@@ -1,173 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- stories/index.blade.php -->
+@extends('welcome')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stories List</title>
-    <!-- Include Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+@section('title', 'Stories')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        /* Custom styles for better appearance */
-        body {
-            background-color: #f8f9fa;
-        }
-
-        .container {
-            max-width: 1200px;
-        }
-
-        .page-header {
-            border-bottom: 1px solid #dee2e6;
-            padding-bottom: 15px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            border: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .card-title {
-            font-weight: 600;
-            font-size: 1.25rem;
-            color: #333;
-        }
-
-        .card-text {
-            font-size: 0.95rem;
-            color: #555;
-        }
-
-        .card-footer {
-            background-color: #f8f9fa;
-            border-top: none;
-            padding-top: 10px;
-            font-size: 0.85rem;
-        }
-
-        .modal-header {
-            background-color: #007bff;
-            color: white;
-        }
-
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-        }
-
-        .btn-primary:hover {
-            background-color: #0056b3;
-            border-color: #0056b3;
-        }
-
-        .form-control,
-        .form-select {
-            box-shadow: none;
-            border-radius: 0.25rem;
-        }
-
-        /* Nội dung chính */
-        .main-content {
-            margin-left: 270px;
-            padding: 30px;
-        }
-
-        /* Thẻ Card */
-        .card {
-            border: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 250px;
-            background-color: #ffffff;
-            padding: 20px 10px;
-            border-right: 1px solid #dee2e6;
-        }
-    </style>
-</head>
-
-<body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a href="{{ route('stories.index') }}" class="nav-link">
-                    <i class="bi bi-journal-text"></i> Stories
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="{{ route('users.index') }}" class="nav-link">
-                    <i class="bi bi-people"></i> Users
-                </a>
-            </li>
-        </ul>
+@section('content')
+    <!-- Tiêu đề -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Stories List</h1>
+        <!-- Tìm kiếm -->
+        <form class="d-flex" method="GET" action="{{ route('stories.search') }}">
+            <input class="form-control me-2" type="search" name="search" placeholder="Search stories..." aria-label="Search">
+            <button class="btn btn-outline-primary" type="submit">Search</button>
+        </form>
+        <!-- Nút thêm Story -->
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStoryModal">
+            Add New Story
+        </button>
     </div>
 
-    <!-- Nội dung chính -->
-    <div class="main-content">
-        <!-- Tiêu đề -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3">Stories List</h1>
-            <!-- Tìm kiếm -->
-            <form class="d-flex" method="GET" action="{{ route('stories.search') }}">
-                <input class="form-control me-2" type="search" name="search" placeholder="Search stories..."
-                    aria-label="Search">
-                <button class="btn btn-outline-primary" type="submit">Search</button>
-            </form>
-            <!-- Nút thêm Story -->
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStoryModal">
-                Add New Story
-            </button>
-        </div>
-
-        <!-- Danh sách Stories -->
-        <div class="row">
-            @if (empty($storiesArray))
-                <p class="text-center">No stories available.</p>    
-            @else
-                @foreach ($storiesArray as $story)
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100 shadow-sm">
-                            <a href="{{ route('stories.show', $story['id']) }}">
-                                <img src="{{ $story['image_path'] }}" class="card-img-top" alt="{{ $story['title'] }}"
-                                    style="max-height: 200px; object-fit: cover;">
-                            </a>
-                            <div class="card-body">
-                                <h5 class="card-title">{{ $story['title'] }}</h5>
-                                <p class="card-text"><strong>Author:</strong> {{ $story['author'] }}</p>
-                                <p class="card-text"><strong>Views:</strong> {{ $story['views'] ?? 'N/A' }}</p>
-                                <p class="card-text">{{ \Illuminate\Support\Str::limit($story['description'], 100) }}
-                                </p>
-                            </div>
-                            <div class="card-footer text-muted">
-                                <small>Rating: {{ $story['averageRating'] }}</small><br>
-                                <small>Published on:
-                                    {{ \Carbon\Carbon::parse($story['created_at'])->format('F d, Y') }}</small>
-                            </div>
+    <!-- Danh sách Stories -->
+    <div class="row">
+        @if (empty($storiesArray))
+            <p class="text-center">No stories available.</p>
+        @else
+            @foreach ($storiesArray as $story)
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <a href="{{ route('stories.show', $story['id']) }}">
+                            <img src="{{ $story['image_path'] }}" class="card-img-top" alt="{{ $story['title'] }}"
+                                style="max-height: 200px; object-fit: cover;">
+                        </a>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ $story['title'] }}</h5>
+                            <p class="card-text"><strong>Author:</strong> {{ $story['author'] }}</p>
+                            <p class="card-text"><strong>Views:</strong> {{ $story['views'] ?? 'N/A' }}</p>
+                            <p class="card-text">{{ \Illuminate\Support\Str::limit($story['description'], 100) }}</p>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>Rating: {{ $story['averageRating'] }}</small><br>
+                            <small>Published on: {{ \Carbon\Carbon::parse($story['created_at'])->format('F d, Y') }}</small>
                         </div>
                     </div>
-                @endforeach
-            @endif
-        </div>
+                </div>
+            @endforeach
+        @endif
     </div>
+
     <div class="container mt-5">
         <!-- Modal for Adding New Story -->
-        <div class="modal fade" id="addStoryModal" tabindex="-1" aria-labelledby="addStoryModalLabel"
-            aria-hidden="true">
+        <div class="modal fade" id="addStoryModal" tabindex="-1" aria-labelledby="addStoryModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -198,8 +79,7 @@
                                             <input class="form-check-input" type="checkbox"
                                                 id="category_{{ $category->category_id }}" name="categories[]"
                                                 value="{{ $category->category_id }}">
-                                            <label class="form-check-label"
-                                                for="category_{{ $category->category_id }}">
+                                            <label class="form-check-label" for="category_{{ $category->category_id }}">
                                                 {{ $category->title }}
                                             </label>
                                         </div>
@@ -212,8 +92,7 @@
                                 <input type="file" class="form-control" id="image" name="image" required>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary"
-                                    data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                 <button type="submit" class="btn btn-primary">Save Story</button>
                             </div>
                         </form>
@@ -223,9 +102,4 @@
         </div>
     </div>
 
-    <!-- Include Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
-</body>
-
-</html>
+@endsection
