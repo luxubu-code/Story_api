@@ -37,7 +37,7 @@ class UploadImagesJob implements ShouldQueue
     public function handle()
     {
         try {
-    
+
             $imageUrl = Cloudinary::upload(Storage::disk('local')->path($this->tempFilePath))->getSecurePath();
             Image::create([
                 'chapter_id' => $this->chapter->chapter_id,

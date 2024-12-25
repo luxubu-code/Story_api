@@ -17,7 +17,7 @@ class ReadingHistoryController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = auth('api')->user();
         $history = ReadingHistory::where('user_id', $user->id)->with(['story', 'chapters'])->get();
         return response()->json([
             'response_code' => '200',
@@ -29,9 +29,9 @@ class ReadingHistoryController extends Controller
     public function store(Request $request)
     {
         try {
-            $user = Auth::user();
+            $user = auth('api')->user();
             $validatedData = $request->validate([
-                'id'=>'nullable',
+                'id' => 'nullable',
                 'story_id' => 'required|exists:stories,story_id',
                 'chapter_id' => 'required|exists:chapters,chapter_id',
             ]);

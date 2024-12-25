@@ -33,7 +33,7 @@ class RatingController extends Controller
     public function ratings(Request $request)
     {
         try {
-            $user = Auth::user();
+            $user = auth('api')->user();
             if (!$user) {
                 return response()->json([
                     'response_code' => '401',

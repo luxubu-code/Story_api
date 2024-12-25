@@ -10,6 +10,10 @@ use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\ForgotPasswordController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\VipPackageController;
+use App\Http\Controllers\API\SubscriptionController;
+use App\Http\Controllers\API\VNPayController;
+
 
 // Routes for Authentication
 Route::prefix('auth')->group(function () {
@@ -19,14 +23,26 @@ Route::prefix('auth')->group(function () {
 });
 
 // Routes for User Profile and FCM Token
-Route::middleware('auth:api')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-    Route::put('/user', [AuthController::class, 'update']);
-    Route::post('/send-fcmToken', [AuthController::class, 'store']);
-});
+Route::middleware('auth')->group(function () {
 
+    Route::get('/user', [AuthController::class, 'userInfo']);
+    Route::post('/user', [AuthController::class, 'update']);
+    Route::post('/send-fcmToken', [AuthController::class, 'store']);
+
+
+
+    Route::post('/vnpay/return', [SubscriptionController::class, 'handleReturn']);
+
+
+    Route::get('subscriptions/current', [SubscriptionController::class, 'getCurrentSubscription']);
+    Route::get('subscriptions/history', [SubscriptionController::class, 'getHistory']);
+    Route::post('subscriptions/purchase', [SubscriptionController::class, 'purchase']);
+
+
+    Route::get('user/vip-status', [AuthController::class, 'getVipStatus']);
+});
+Route::get('vip', [VipPackageController::class, 'index']);
+Route::get('vip/{id}', [VipPackageController::class, 'show']);
 // Routes for Password Management
 Route::post('/password', [ForgotPasswordController::class, 'sendNewPassWord']);
 
@@ -40,10 +56,10 @@ Route::prefix('stories')->group(function () {
     Route::get('/search', [StoryController::class, 'search']);
 });
 
-// Routes for Comments
 Route::get('/comment/{id}', [CommentController::class, 'index']);
 Route::middleware('auth:api')->prefix('comment')->group(function () {
     Route::post('/', [CommentController::class, 'store']);
+    Route::delete('/{id}', [CommentController::class, 'delete']);
 });
 
 // Routes for Ratings

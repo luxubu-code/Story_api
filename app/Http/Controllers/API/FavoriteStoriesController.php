@@ -13,7 +13,7 @@ class FavoriteStoriesController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user = auth('api')->user();
         $favourite_stories = FavoriteStories::with('story')->where('user_id', $user->id)->get();
 
         $favourite_stories_data = $favourite_stories->map(function ($favouriteStory) {
@@ -35,15 +35,15 @@ class FavoriteStoriesController extends Controller
     }
     public function exists($id)
     {
-        $user = Auth::user();
+        $user = auth('api')->user();
         $exists = FavoriteStories::where('user_id', $user->id)->where('story_id', $id)->exists();
         return response()->json([
-            'exists' => $exists, 
+            'exists' => $exists,
         ]);
     }
     public function store(Request $request)
     {
-        $user = Auth::user();
+        $user = auth('api')->user();
         $validatedData = $request->validate([
             'story_id' => 'required|exists:stories,story_id',
         ]);
@@ -72,13 +72,13 @@ class FavoriteStoriesController extends Controller
     }
     public function destroy($id)
     {
-        $user = Auth::user();
+        $user = auth('api')->user();
 
         $favoriteStory  = FavoriteStories::where('user_id', $user->id)->where('story_id', $id)->first();
         if ($favoriteStory) {
             $favoriteStory->delete();
             return response()->json([
-                'status' => 'success',  
+                'status' => 'success',
                 'message' => 'Favorite Stories deleted successfully.'
             ]);
         } else {
