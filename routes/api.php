@@ -7,6 +7,7 @@ use App\Http\Controllers\API\ReadingHistoryController;
 use App\Http\Controllers\API\ImageController;
 use App\Http\Controllers\API\StoryController;
 use App\Http\Controllers\API\RatingController;
+use App\Http\Controllers\API\VipSubscriptionController;
 use App\Http\Controllers\ForgotPasswordController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -31,18 +32,12 @@ Route::middleware('auth')->group(function () {
 
 
 
-    Route::post('/vnpay/return', [SubscriptionController::class, 'handleReturn']);
-
-
-    Route::get('subscriptions/current', [SubscriptionController::class, 'getCurrentSubscription']);
-    Route::get('subscriptions/history', [SubscriptionController::class, 'getHistory']);
-    Route::post('subscriptions/purchase', [SubscriptionController::class, 'purchase']);
-
-
-    Route::get('user/vip-status', [AuthController::class, 'getVipStatus']);
+    Route::get('/vip/packages', [VipSubscriptionController::class, 'showPackages'])->name('vip.packages');
+    Route::post('/vip/subscribe/{package}', [VipSubscriptionController::class, 'subscribe'])->name('vip.subscribe');
 });
-Route::get('vip', [VipPackageController::class, 'index']);
-Route::get('vip/{id}', [VipPackageController::class, 'show']);
+Route::post('/vnpay/ipn', [VipSubscriptionController::class, 'handleVnPayIPN'])->name('vnpay.ipn');
+Route::get('/vnpay/return', [VipSubscriptionController::class, 'handleVnPayReturn'])->name('vnpay.return');
+
 // Routes for Password Management
 Route::post('/password', [ForgotPasswordController::class, 'sendNewPassWord']);
 

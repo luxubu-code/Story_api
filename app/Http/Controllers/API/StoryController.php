@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Helpers\ErrorHelper;
+use App\Http\Helpers\ResponseHelper;
+use App\Http\Helpers\ValidationHelper;
 use App\Models\Chapter;
 use App\Models\FavoriteStories;
 use App\Models\Ratings;
@@ -43,33 +46,30 @@ class StoryController extends Controller
                     })
                 ];
             });
-            return response()->json([
-                'status' => 'success',
-                'data' => $stories
-            ], 200);
+            return ResponseHelper::success($stories, 'Lấy danh sách truyện thành công');
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong while retrieving stories.',
-                'error' => $e->getMessage()
-            ], 500);
+            return ErrorHelper::serverError($e, 'Lỗi khi tải danh sách truyện');
         }
     }
+    private function extractPublicIdFromUrl($url)
+    {
+        $withoutExtension = preg_replace('/\.[^.]+$/', '', $url);
+        $public_id = preg_replace('/^.*\//', '', $withoutExtension);
+
+        return $public_id;
+    }
+
     public function show($id)
     {
         try {
             $story = Story::with('chapters', 'categories', 'ratings', 'favorites')->find($id);
             if (!$story) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Story not found.'
-                ], 404);
+                return ErrorHelper::notFound('Không tìm thấy truyện');
             }
-
             $averageRating = $story->ratings->avg('rating') ?? 0;
             $favouriteCount = $story->favorites->count() ?? 0;
             $views = $story->chapters->sum('views');
-            $detailedstorsy = [
+            $detailedStory = [
                 'id' => $story->story_id,
                 'title' => $story->title,
                 'author' => $story->author,
@@ -106,16 +106,9 @@ class StoryController extends Controller
                     }
                 ) : []
             ];
-            return response()->json([
-                'status' => 'success',
-                'data' => $detailedstorsy
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong while retrieving story.',
-                'error' => $e->getMessage()
-            ], 500);
+            return ResponseHelper::success($detailedStory, 'Lấy thông tin truyện thành công');
+        } catch (Exception $e) {
+            return ErrorHelper::serverError($e, 'Lỗi khi tải thông tin truyện');
         }
     }
     public function read($id)
@@ -128,11 +121,11 @@ class StoryController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            ValidationHelper::make($request->all(), [
                 'title' => 'required',
                 'author' => 'required',
                 'description' => 'required',
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
                 'categories' => 'required|array',
                 'categories.*' => 'exists:categories,category_id',
             ]);
@@ -151,16 +144,9 @@ class StoryController extends Controller
                 'file_name' => $fileName
             ]);
             $story->categories()->attach($request->categories);
-            return response()->json([
-                'status' => 'store success',
-                'data' => $story,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong while storing story.',
-                'error' => $e->getMessage()
-            ], 500);
+            return ResponseHelper::success($story, 'Thêm truyện mới thành công');
+        } catch (Exception $e) {
+            return ErrorHelper::serverError($e, 'Lỗi khi thêm truyện');
         }
     }
     public function update(Request $request, $id): JsonResponse
@@ -200,28 +186,26 @@ class StoryController extends Controller
             } else {
                 $story->update($request->only(['title', 'author', 'description']));
             }
-
-            return response()->json([
-                'status' => 'success',
-                'data' => $story
-            ]);
+            return ResponseHelper::success($story, 'Cập nhật truyện thành công');
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong while updating the story.',
-                'error' => $e->getMessage()
-            ], 500);
+            return ErrorHelper::serverError($e, 'Lỗi khi cập nhật truyện');
         }
     }
+
     public function destroy($id): JsonResponse
     {
         try {
             $story = Story::findOrFail($id);
             DB::beginTransaction();
             try {
-                Cloudinary::destroy($story->file_name);
-                // Xóa tất cả quan hệ và dữ liệu liên quan
+                $public_id = preg_replace('/\.[^.]+$/', '', $story->file_name);
+
+                Cloudinary::destroy($public_id);
                 $story->chapters()->each(function ($chapter) {
+                    $chapter->images->each(function ($image) {
+                        $public_id = $this->extractPublicIdFromUrl($image->file_name);
+                        Cloudinary::destroy($public_id);
+                    });
                     $chapter->images()->delete();
                     $chapter->delete();
                 });
@@ -237,25 +221,17 @@ class StoryController extends Controller
 
                 DB::commit();
 
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Xóa truyện thành công'
-                ]);
+                return ResponseHelper::success('Xóa truyện thành công');
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Không tìm thấy truyện'
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Đã xảy ra lỗi khi xóa truyện',
-                'error' => $e->getMessage()
-            ], 500);
+            DB::rollBack();
+            return ErrorHelper::notFound('Không tìm thấy truyện');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return ErrorHelper::serverError($e, 'Lỗi khi xóa truyện');
         }
     }
     public function search(Request $request): JsonResponse
@@ -289,16 +265,9 @@ class StoryController extends Controller
                     })
                 ];
             });
-            return response()->json([
-                'status' => 'success',
-                'data' => $stories
-            ], 200);
+            return ResponseHelper::success($stories, 'Tìm kiếm truyện thành công');
         } catch (Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Something went wrong while searching stories.',
-                'error' => $e->getMessage()
-            ], 500);
+            return ErrorHelper::serverError($e, 'Lỗi khi tìm kiếm truyện');
         }
     }
 }

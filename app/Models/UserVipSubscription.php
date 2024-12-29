@@ -5,21 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class UserSubscription extends Model
+class UserVipSubscription extends Model
 {
-    use HasFactory;
     protected $fillable = [
         'user_id',
         'vip_package_id',
         'start_date',
         'end_date',
-        'status'
+        'payment_status',
+        'vnpay_transaction_id'
     ];
 
-    protected $dates = [
-        'start_date',
-        'end_date'
-    ];
+    protected $dates = ['start_date', 'end_date'];
 
     public function user()
     {

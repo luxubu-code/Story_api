@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\ErrorHelper;
+use App\Http\Helpers\ResponseHelper;
+use App\Http\Helpers\ValidationHelper;
 use App\Http\Resources\HistoryResource;
 use App\Models\ReadingChapter;
 use Illuminate\Support\Facades\Auth;
@@ -19,53 +22,36 @@ class ReadingHistoryController extends Controller
     {
         $user = auth('api')->user();
         $history = ReadingHistory::where('user_id', $user->id)->with(['story', 'chapters'])->get();
-        return response()->json([
-            'response_code' => '200',
-            'status'        => 'success',
-            'message'       => 'success get reading history',
-            'data'          => HistoryResource::collection($history),
-        ]);
+        return ResponseHelper::success(
+            HistoryResource::collection($history),
+            'Lấy lịch sử đọc thành công'
+        );
     }
     public function store(Request $request)
     {
         try {
             $user = auth('api')->user();
-            $validatedData = $request->validate([
+            ValidationHelper::make($request->all(), [
                 'id' => 'nullable',
                 'story_id' => 'required|exists:stories,story_id',
                 'chapter_id' => 'required|exists:chapters,chapter_id',
             ]);
-            $story = Story::findOrFail($validatedData['story_id']);
+            $story = Story::findOrFail($request['story_id']);
             $history = ReadingHistory::updateOrCreate(
                 [
                     'user_id' => $user->id,
-                    'story_id' => $validatedData['story_id'],
+                    'story_id' => $request['story_id'],
                     'base_url' => $story->base_url,
                     'file_name' => $story->file_name,
                 ],
                 [
-                    'chapter_id' => $validatedData['chapter_id'],
+                    'chapter_id' => $request['chapter_id'],
                     'read_at' => now()
                 ]
             );
-
-            return response()->json([
-                'response_code' => '200',
-                'status'        => 'success',
-                'data'          => $history,
-            ]);
+            return ResponseHelper::success($history, 'Lịch sử đọc được lưu thành công');
         } catch (\Exception $e) {
-            return response()->json([
-                'response_code' => '500',
-                'status'        => 'error',
-                'message'       => $e->getMessage(),
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'response_code' => '422',
-                'status'        => 'error',
-                'message'       => $e->getMessage(),
-            ]);
+            return ErrorHelper::serverError($e, 'Lỗi khi lưu lịch sử đọc');
         }
     }
 }

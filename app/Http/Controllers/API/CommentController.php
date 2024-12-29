@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\ErrorHelper;
+use App\Http\Helpers\ResponseHelper;
+use App\Http\Helpers\ValidationHelper;
 use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use Illuminate\Validation\ValidationException;
@@ -23,15 +26,9 @@ class CommentController extends Controller
                 ->whereNull('parent_id')
                 ->orderBy('created_at', 'desc')
                 ->paginate(15);
-            return response()->json([
-                'message' => 'Success',
-                'data' => CommentResource::collection($comments),
-            ]);
+            return ResponseHelper::success(CommentResource::collection($comments), 200);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to retrieve comments',
-                'error' => $e->getMessage()
-            ], 500);
+            return ErrorHelper::serverError($e, 'Không thể lấy danh sách bình luận');
         }
     }
     public function delete($id)
@@ -40,39 +37,34 @@ class CommentController extends Controller
             DB::beginTransaction();
             $user = auth('api')->user();
             if (!$user) {
-                return response()->json(['message' => 'Unauthorized'], 401);
+                return ErrorHelper::unauthorized('Người dùng chưa được xác thực');
             }
             $comment = Comment::find($id);
             if ($comment->user_id !== $user->id) {
-                return response()->json([
-                    'message' => 'You are not authorized to delete this comment',
-                    'status' => 'error',
-                ], 403);
+                return ErrorHelper::response(
+                    'Bạn không có quyền xóa bình luận này',
+                    403
+                );
             }
             $comment->replies()->delete();
             $comment->delete();
             DB::commit();
-            return response()->json([
-                'message' => 'Comment deleted successfully',
-                'status' => 'success',
-                'data' => $comment
-            ]);
+            return ResponseHelper::success(
+                'Xóa bình luận thành công'
+            );
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to delete comment',
-                'error' => $e->getMessage(),
-            ], 500);
+            return ErrorHelper::serverError($e, 'Không thể xóa bình luận');
         }
     }
     public function store(Request $request)
     {
         try {
             $user = auth('api')->user();
-            $request->validate([
+            ValidationHelper::make($request->all(), [
                 'content' => 'required',
                 'story_id' => 'required|exists:stories,story_id',
-                'parent_id' => 'nullable|exists:comments,id'
+                'parent_id' => 'nullable|exists:comments,id',
             ]);
             $comment = Comment::create([
                 'content' => $request->input('content'),
@@ -80,21 +72,15 @@ class CommentController extends Controller
                 'parent_id' => $request->input('parent_id'),
                 'user_id' => $user->id,
             ]);
-            return response()->json([
-                'message' => 'Comment created successfully',
-                'status'        => 'success',
-                'data' => $comment
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'message' => 'Failed to create comment',
-                'error' => $e->getMessage()
-            ], 422);
+            return ResponseHelper::success(
+                $comment,
+                'Bình luận thành công'
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create comment',
-                'error' => $e->getMessage()
-            ], 500);
+            return ErrorHelper::serverError(
+                $e,
+                'Không thể tạo bình luận'
+            );
         }
     }
 }

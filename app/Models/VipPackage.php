@@ -7,16 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class VipPackage extends Model
 {
-    use HasFactory;
-    protected $fillable = [
-        'name',
-        'duration',
-        'price',
-        'description',
-        'features'  // JSON chứa các tính năng của gói
-    ];
+    protected $fillable = ['name', 'price', 'duration_days', 'description'];
 
-    protected $casts = [
-        'features' => 'array'
-    ];
+    public function subscriptions()
+    {
+        return $this->hasMany(UserVipSubscription::class);
+    }
 }

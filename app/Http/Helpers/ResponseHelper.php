@@ -18,13 +18,16 @@ class ResponseHelper
         $response = [
             'response_code' => $code,
             'status' => 'success',
-            'message' => $message,
-            'data' => $data,
         ];
 
-        // Chỉ thêm token nếu nó tồn tại
+        if ($data) {
+            $response['data'] = $data;
+        }
+        if ($message) {
+            $response['message'] = $message;
+        }
         if ($token) {
-            $response['token'] = $token;
+            $response['access_token'] = $token;
         }
 
         return response()->json($response, $code);

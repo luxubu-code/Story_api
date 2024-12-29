@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\ValidationHelper;
 use App\Jobs\UploadImagesJob;
 use App\Models\Chapter;
 use App\Models\FavoriteStories;
@@ -13,6 +14,8 @@ use App\Models\User;
 use App\Services\ZipFileService;
 use Illuminate\Support\Facades\Log;
 use App\Services\SendNotificationService;
+use App\Http\Helpers\ResponseHelper;
+use App\Http\Helpers\ErrorHelper;
 
 class ImageController extends Controller
 {
@@ -26,16 +29,13 @@ class ImageController extends Controller
                 'base_url' => $image->base_url,
             ];
         });
-        return response()->json([
-            'status' => 'success',
-            'data' => $data,
-        ], 200);
+        return ResponseHelper::success($data, 'Images retrieved successfully.');
     }
     public function upload(Request $request, $story_id, ZipFileService $zipFileService)
 
     {
         $story = Story::findOrFail($story_id);
-        $request->validate([
+        ValidationHelper::make($request->all(), [
             'title' => 'required',
             'file_zip' => 'required|file|mimes:zip|max:10240',
         ]);
@@ -57,10 +57,7 @@ class ImageController extends Controller
                 }
             }
             if (!$chapter) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Failed to create chapter.',
-                ], 404);
+                return ErrorHelper::serverError(new \Exception('Failed to create chapter.'));
             }
             $zipFile = $request->file('file_zip');
             $validMimeTypes = ['application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed'];
@@ -73,29 +70,19 @@ class ImageController extends Controller
 
             $imagePaths = $zipFileService->extractImages($zipFile->getRealPath(), 'temp_images');
             if (empty($imagePaths)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'No images found in the ZIP file.',
-                ], 404);
+                return ErrorHelper::badRequest('No images found in the ZIP file.');
             }
             foreach ($imagePaths as $imagePath) {
                 UploadImagesJob::dispatch($chapter, $imagePath)->onQueue('high');
             }
-
-            return response()->json([
-                'status' => 'success',
-                'data' => 'Chapter created successfully',
-            ], 200);
+            return ResponseHelper::success(null, 'Chapter created and images uploaded successfully.');
         } catch (\Exception $e) {
             Log::error("Error occurred during image upload: " . $e->getMessage(), [
                 'story_id' => $story_id,
                 'request_data' => $request->all(),
                 'exception_trace' => $e->getTraceAsString()
             ]);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'An error occurred during the upload process: ' . $e->getMessage(),
-            ], 500);
+            return ErrorHelper::serverError($e, 'An error occurred during the upload process.');
         }
     }
     public function destroy($chapter_id)
@@ -105,9 +92,6 @@ class ImageController extends Controller
             $chapter->images()->delete();
         }
         $chapter->delete();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Chapter deleted successfully',
-        ], 200);
+        return ResponseHelper::success(null, 'Chapter deleted successfully.');
     }
 }

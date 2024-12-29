@@ -29,6 +29,7 @@ Route::prefix('stories')->name('stories.')->group(function () {
     Route::post('/', [StoryWebController::class, 'store'])->name('store');
     Route::get('/{story_id}', [StoryWebController::class, 'show'])->name('show');
     Route::post('/{story_id}/upload', [StoryWebController::class, 'upload'])->name('upload');
+    Route::post('/{story_id}/update', [StoryWebController::class, 'update'])->name('update');
     Route::delete('/chapter/{id}', [StoryWebController::class, 'destroyChapter'])->name('chapters.destroy');
     Route::delete('/{id}', [StoryWebController::class, 'destroyStory'])->name('destroy');
     Route::get('/search', [StoryWebController::class, 'searchStory'])->name('search');

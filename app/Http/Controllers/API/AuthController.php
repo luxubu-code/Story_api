@@ -76,14 +76,15 @@ class AuthController extends Controller
             }
 
             $token = $user->createToken('googleAuth')->accessToken;
+            return ResponseHelper::success(new UserResource($user), 'Đăng nhập Google thành công', 200, $token);
 
-            return response()->json([
-                'response_code' => '200',
-                'status' => 'success',
-                'message' => 'Đăng nhập Google thành công',
-                'user' => new UserResource($user),
-                'access_token' => $token
-            ]);
+            // return response()->json([
+            //     'response_code' => '200',
+            //     'status' => 'success',
+            //     'message' => 'Đăng nhập Google thành công',
+            //     'user' => new UserResource($user),
+            //     'access_token' => $token
+            // ]);
         } catch (\Exception $e) {
             Log::error('Google Auth Error: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -108,14 +109,7 @@ class AuthController extends Controller
             }
 
             $token = $user->createToken('authToken')->accessToken;
-
-            return response()->json([
-                'response_code' => '200',
-                'status' => 'success',
-                'message' => 'Đăng nhập thành công',
-                'user' => new UserResource($user),
-                'access_token' => $token
-            ]);
+            return ResponseHelper::success(new UserResource($user), 'Đăng nhập Google thành công', 200, $token);
         } catch (\Exception $e) {
             return ErrorHelper::serverError($e, 'Lỗi đăng nhập');
         }
@@ -131,12 +125,7 @@ class AuthController extends Controller
 
         $user->fcm_token = $request->token;
         $user->save();
-
-        return response()->json([
-            'response_code' => '200',
-            'status' => 'success',
-            'message' => 'Lưu FCM Token thành công'
-        ]);
+        return ResponseHelper::success('Lưu FCM Token thành công', 200);
     }
 
     public function userInfo()
@@ -146,13 +135,7 @@ class AuthController extends Controller
             if (!$user) {
                 return ErrorHelper::unauthorized('Người dùng chưa đăng nhập');
             }
-
-            return response()->json([
-                'response_code' => '200',
-                'status' => 'success',
-                'message' => 'Lấy thông tin người dùng thành công',
-                'data' => new UserResource($user),
-            ]);
+            return ResponseHelper::success(new UserResource($user), 'Lấy thông tin người dùng thành công', 200);
         } catch (\Exception $e) {
             return ErrorHelper::serverError($e, 'Đã xảy ra lỗi không mong muốn');
         }
@@ -218,13 +201,7 @@ class AuthController extends Controller
             ]);
 
             DB::commit();
-
-            return response()->json([
-                'response_code' => '200',
-                'status' => 'success',
-                'message' => 'Cập nhật thông tin người dùng thành công',
-                'data' => new UserResource($user),
-            ]);
+            return ResponseHelper::success(new UserResource($user), 'Cập nhật thông tin người dùng thành công', 200);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Lỗi cập nhật tài khoản: ' . $e->getMessage());

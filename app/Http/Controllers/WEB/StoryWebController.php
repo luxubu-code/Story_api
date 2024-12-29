@@ -70,111 +70,53 @@ class StoryWebController extends StoryController
     public function destroyChapter($id)
     {
         try {
-            // Begin a database transaction
             DB::beginTransaction();
-
-            $chapter = Chapter::findOrFail($id);
+            $chapter = Chapter::with('images')->findOrFail($id);
             $storyId = $chapter->story_id;
-
-            $imageUrls = $chapter->images()
-                ->get(['file_name'])
-                ->map(function ($image) {
-                    return  $image->file_name;
-                })->toArray();
-
-            // Delete images from CloudBinary
+            $imageUrls = $chapter->images->pluck('file_name')->toArray();
             foreach ($imageUrls as $imageUrl) {
-
                 try {
-                    // Use CloudBinary SDK to delete the image
-                    $result = Cloudinary::destroy($imageUrls);
-
-                    // Check if deletion was successful
-                    if (!$result['result'] === 'ok') {
-                        throw new \Exception("Failed to delete image: {$imageUrls}");
+                    $public_id = $this->extractPublicIdFromUrl($imageUrl);
+                    $result = Cloudinary::destroy($public_id);
+                    if ($result['result'] !== 'ok') {
+                        Log::warning("Cloudinary deletion failed for image", [
+                            'public_id' => $public_id,
+                            'chapter_id' => $id,
+                            'result' => $result
+                        ]);
                     }
                 } catch (\Exception $imageDeleteError) {
-                    // Log individual image deletion errors but continue processing
                     Log::warning('Image deletion error: ' . $imageDeleteError->getMessage(), [
-                        'public_id' => $imageUrls,
-                        'chapter_id' => $id
+                        'public_id' => $public_id ?? $imageUrl,
+                        'chapter_id' => $id,
+                        'error' => $imageDeleteError->getTraceAsString()
                     ]);
                 }
             }
-
             $chapter->images()->delete();
             $chapter->delete();
             DB::commit();
+
             return redirect()->route('stories.show', $storyId)
                 ->with('success', 'Chapter and associated images deleted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Chapter deletion error: ' . $e->getMessage(), [
+            Log::error('Chapter deletion failed', [
                 'chapter_id' => $id,
+                'error_message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
             return redirect()->route('stories.show', $storyId ?? null)
-                ->with('error', 'Unable to delete chapter: ' . $e->getMessage());
+                ->with('error', 'Unable to delete chapter. Please try again later.');
         }
     }
-    // public function destroyChapter($id)
-    // {
-    //     try {
-    //         // Begin a database transaction
-    //         DB::beginTransaction();
+    private function extractPublicIdFromUrl($url)
+    {
+        $withoutExtension = preg_replace('/\.[^.]+$/', '', $url);
+        $public_id = preg_replace('/^.*\//', '', $withoutExtension);
 
-    //         // Find the chapter to get story_id and associated image information
-    //         $chapter = Chapter::findOrFail($id);
-    //         $storyId = $chapter->story_id;
-
-    //         // Retrieve all image URLs associated with this chapter
-    //         $imageUrls = $chapter->images()
-    //             ->get(['base_url', 'file_name'])
-    //             ->map(function ($image) {
-    //                 return $image->base_url . '/' . $image->file_name;
-    //             })->toArray();
-
-    //         // Delete images from CloudBinary
-    //         foreach ($imageUrls as $imageUrl) {
-    //             // Extract the public ID from the CloudBinary URL
-    //             $publicId = $this->extractCloudinaryPublicId($imageUrl);
-
-    //             try {
-    //                 // Use CloudBinary SDK to delete the image
-    //                 $result = Cloudinary::destroy($publicId);
-
-    //                 // Check if deletion was successful
-    //                 if (!$result['result'] === 'ok') {
-    //                     throw new \Exception("Failed to delete image: {$publicId}");
-    //                 }
-    //             } catch (\Exception $imageDeleteError) {
-    //                 // Log individual image deletion errors but continue processing
-    //                 Log::warning('Image deletion error: ' . $imageDeleteError->getMessage(), [
-    //                     'public_id' => $publicId,
-    //                     'chapter_id' => $id
-    //                 ]);
-    //             }
-    //         }
-
-    //         $chapter->images()->delete();
-    //         $chapter->delete();
-    //         DB::commit();
-    //         return redirect()->route('stories.show', $storyId)
-    //             ->with('success', 'Chapter and associated images deleted successfully!');
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         Log::error('Chapter deletion error: ' . $e->getMessage(), [
-    //             'chapter_id' => $id,
-    //             'trace' => $e->getTraceAsString()
-    //         ]);
-
-    //         return redirect()->route('stories.show', $storyId ?? null)
-    //             ->with('error', 'Unable to delete chapter: ' . $e->getMessage());
-    //     }
-    // }
-
-
+        return $public_id;
+    }
 
     public function destroyStory($id)
     {
@@ -197,5 +139,17 @@ class StoryWebController extends StoryController
         $categories = Category::all();
 
         return view('stories.index', compact('storiesArray', 'categories'));
+    }
+
+
+    public function updateStory(Request $request, $id)
+    {
+        $response = parent::update($request, $id);
+
+        if ($response->status() === 200) {
+            return redirect()->route('stories.show', $id)->with('success', 'Story updated successfully!');
+        } else {
+            return redirect()->back()->with('error', $response->getData()->message);
+        }
     }
 }

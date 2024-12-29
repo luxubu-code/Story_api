@@ -10,27 +10,17 @@ class VipPackageSeeder extends Seeder
     public function run()
     {
         VipPackage::create([
-            'name' => 'VIP Tháng',
-            'duration' => 1,
-            'price' => 30000,
-            'description' => 'Gói VIP 1 tháng',
-            'features' => [
-                'Đọc truyện VIP',
-                'Huy hiệu VIP thường',
-                'Tải truyện VIP về máy'
-            ]
+            'name' => 'Gói VIP Tháng',
+            'price' => 100000,
+            'duration_days' => 30,
+            'description' => 'Đọc truyện VIP trong 1 tháng'
         ]);
 
         VipPackage::create([
-            'name' => 'VIP Năm',
-            'duration' => 12,
-            'price' => 300000,
-            'description' => 'Gói VIP 1 năm (Tiết kiệm 100,000đ)',
-            'features' => [
-                'Đọc truyện VIP',
-                'Tải truyện về máy',
-                'Huy hiệu VIP đặc biệt'
-            ]
+            'name' => 'Gói VIP Năm',
+            'price' => 1000000,
+            'duration_days' => 365,
+            'description' => 'Đọc truyện VIP 1 năm với ưu đãi đặc biệt'
         ]);
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\ErrorHelper;
+use App\Http\Helpers\ResponseHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\FavoriteStories;
@@ -25,13 +27,7 @@ class FavoriteStoriesController extends Controller
                 'updated_at' => Carbon::parse($favouriteStory->story->updated_at)->format('Y-m-d')
             ];
         });
-
-        return response()->json([
-            'response_code' => '200',
-            'status'        => 'success',
-            'message'       => 'success get favourite stories',
-            'data'          => $favourite_stories_data,
-        ]);
+        return ResponseHelper::success($favourite_stories_data, 'Success get favourite stories');
     }
     public function exists($id)
     {
@@ -50,11 +46,7 @@ class FavoriteStoriesController extends Controller
         $story = Story::findOrFail($validatedData['story_id']);
         $exists = FavoriteStories::where('user_id', $user->id)->where('story_id', $request->story_id)->exists();
         if ($exists) {
-            return response()->json([
-                'response_code' => '400',
-                'status'        => 'error',
-                'message'       => 'story already exists in favourite',
-            ]);
+            return ErrorHelper::badRequest('Story already exists in favourite');
         } else {
             $favourite_story = FavoriteStories::create([
                 'user_id' => $user->id,
@@ -63,11 +55,7 @@ class FavoriteStoriesController extends Controller
                 'base_url' => $story->base_url,
                 'file_name' => $story->file_name,
             ]);
-            return response()->json([
-                'response_code' => '200',
-                'status'        => 'success',
-                'data'          => $favourite_story,
-            ]);
+            return ResponseHelper::success($favourite_story, 'Story added to favourites successfully');
         }
     }
     public function destroy($id)
@@ -77,15 +65,9 @@ class FavoriteStoriesController extends Controller
         $favoriteStory  = FavoriteStories::where('user_id', $user->id)->where('story_id', $id)->first();
         if ($favoriteStory) {
             $favoriteStory->delete();
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Favorite Stories deleted successfully.'
-            ]);
+            return ResponseHelper::success(null, 'Favorite story deleted successfully');
         } else {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Favorite Story not found.'
-            ], 404);
+            return ErrorHelper::notFound('Favorite story not found');
         }
     }
 }
