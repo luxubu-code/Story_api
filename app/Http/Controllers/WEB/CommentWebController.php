@@ -10,8 +10,7 @@ class CommentWebController extends CommentController
 {
     public function getAll()
     {
-        $response = parent::getAllComment();
-        $comments = $response->original['data'];
+        $comments = parent::getAllComment();
         return view("comment.index", compact("comments"));
     }
 }

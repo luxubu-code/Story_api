@@ -92,4 +92,16 @@ class RatingController extends Controller
             return ErrorHelper::serverError($e);
         }
     }
+    public function getAllRating()
+    {
+        try {
+            $ratings = Ratings::all();
+            return ResponseHelper::success(
+                RatingResource::collection($ratings),
+                'Lấy danh sách đánh giá thành công'
+            );
+        } catch (\Exception $e) {
+            return ErrorHelper::serverError($e);
+        }
+    }
 }

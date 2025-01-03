@@ -87,6 +87,6 @@ class CommentController extends Controller
     {
         // $comment = Comment::all();
         $comment = Comment::with('user')->get();
-        return ResponseHelper::success($comment, 'Lấy dữ liệu thành công');
+        return ResponseHelper::success(CommentResource::collection($comment), 'Lấy dữ liệu thành công');
     }
 }

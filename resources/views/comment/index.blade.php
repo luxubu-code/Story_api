@@ -21,12 +21,14 @@
                     <tbody>
                         @foreach ($comments as $index => $comment)
                             <tr>
-                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $index }}</td>
                                 <td>
-                                    {{ $comment['content'] }}
+                                    {{ $comment->content }}
+                                    {{-- {{ $comment['content'] }} --}}
                                 </td>
                                 <td>
-                                    {{ $comment['user']['name'] }}
+                                    {{ $comment->user->name }}
+                                    {{-- {{ $comment['user']['name'] }} --}}
                                 </td>
                             </tr>
                         @endforeach
