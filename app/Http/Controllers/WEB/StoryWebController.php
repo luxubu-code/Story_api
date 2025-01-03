@@ -32,12 +32,41 @@ class StoryWebController extends StoryController
 
     public function store(Request $request)
     {
-        $response = parent::store($request);
+        try {
+            $response = parent::store($request);
+            $responseData = json_decode($response->getContent());
 
-        if ($response->status() === 200) {
-            return redirect()->route('stories.store')->with('success', 'Story added successfully!');
-        } else {
-            return redirect()->route('stories.store')->with('error', $response->getData()->message);
+            // Check if the response contains a validation error for duplicate story
+            if ($response->status() === 422 && isset($responseData->errors->duplicate_story)) {
+                $duplicateStory = $responseData->errors->duplicate_story;
+
+                // Create a more user-friendly error message
+                $errorMessage = sprintf(
+                    'A story with similar details already exists: "%s" by %s (ID: %s)',
+                    $duplicateStory->title,
+                    $duplicateStory->author,
+                    $duplicateStory->id
+                );
+
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', $errorMessage);
+            }
+
+            if ($response->status() === 200) {
+                return redirect()->route('stories.index')
+                    ->with('success', 'Story added successfully!');
+            }
+
+            // Handle other types of errors
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $responseData->message ?? 'An error occurred while adding the story.');
+        } catch (\Exception $e) {
+            // Handle any unexpected errors
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'An unexpected error occurred. Please try again.');
         }
     }
     public function show($story_id)
@@ -151,5 +180,13 @@ class StoryWebController extends StoryController
         } else {
             return redirect()->back()->with('error', $response->getData()->message);
         }
+    }
+    public function getMost()
+    {
+        $response = parent::getMostFavorited();
+        $storiesArray = json_decode(json_encode($response->getData()->data), true);
+        $categories = Category::all();
+
+        return view('favorite.favorite', compact('storiesArray', 'categories'));
     }
 }

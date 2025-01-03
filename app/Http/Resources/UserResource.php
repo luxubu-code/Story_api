@@ -15,11 +15,22 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            "id" => $this->id,
             'name' => $this->name,
             'email' => $this->email,
             'date_of_birth' => $this->date_of_birth,
             'avatar_url' => $this->avatar_url,
             'created_at' => $this->created_at,
+            'is_vip' => $this->is_vip,
+            'current_subscription' => $this->when($this->is_vip, function () {
+                return new UserVipSubscriptionResource(
+                    $this->vipSubscriptions()
+                        ->where('payment_status', 'completed')
+                        ->where('end_date', '>', now())
+                        ->latest()
+                        ->first()
+                );
+            }),
         ];
     }
 }

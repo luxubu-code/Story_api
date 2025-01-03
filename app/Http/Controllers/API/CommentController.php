@@ -83,4 +83,10 @@ class CommentController extends Controller
             );
         }
     }
+    public function getAllComment()
+    {
+        // $comment = Comment::all();
+        $comment = Comment::with('user')->get();
+        return ResponseHelper::success($comment, 'Lấy dữ liệu thành công');
+    }
 }

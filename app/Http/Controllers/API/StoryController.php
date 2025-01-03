@@ -32,7 +32,7 @@ class StoryController extends Controller
                     'id' => $story->story_id,
                     'title' => $story->title,
                     'author' => $story->author,
-                    'views' => $story->views ?? 0,
+                    'views' => $story->chapters->sum('views') ?? 0,
                     'description' => $story->description,
                     'image_path' => $story->base_url . $story->file_name,
                     'created_at' => $story->created_at,
@@ -114,9 +114,7 @@ class StoryController extends Controller
     public function read($id)
     {
         Chapter::findOrFail($id)->increment('views');
-        return response()->json([
-            'status' => 'success',
-        ]);
+        return ResponseHelper::success('Lấy thông tin truyện thành công');
     }
     public function store(Request $request)
     {
@@ -129,6 +127,26 @@ class StoryController extends Controller
                 'categories' => 'required|array',
                 'categories.*' => 'exists:categories,category_id',
             ]);
+            $duplicateCheck = Story::where(function ($query) use ($request) {
+                $query->where('title', $request->title)
+                    ->orWhere(function ($q) use ($request) {
+                        $q->where('author', $request->author)
+                            ->whereRaw('LOWER(title) = ?', [strtolower($request->title)]);
+                    });
+            })->first();
+
+            if ($duplicateCheck) {
+                return ErrorHelper::validationError(
+                    [
+                        'duplicate_story' => [
+                            'id' => $duplicateCheck->story_id,
+                            'title' => $duplicateCheck->title,
+                            'author' => $duplicateCheck->author
+                        ]
+                    ],
+                    'Truyện đã tồn tại'
+                );
+            }
             $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath());
             $imageUrl = $uploadedFileUrl->getSecurePath();
 
@@ -268,6 +286,42 @@ class StoryController extends Controller
             return ResponseHelper::success($stories, 'Tìm kiếm truyện thành công');
         } catch (Exception $e) {
             return ErrorHelper::serverError($e, 'Lỗi khi tìm kiếm truyện');
+        }
+    }
+    public function getMostFavorited(): JsonResponse
+    {
+        try {
+            $stories = Story::withCount('ratings')
+                ->with(['ratings', 'categories', 'chapters'])
+                ->orderBy('ratings_count', 'desc')
+                ->take(10)
+                ->get();
+
+            // Định dạng dữ liệu trả về
+            $formattedStories = $stories->map(function ($story) {
+                return [
+                    'id' => $story->story_id,
+                    'title' => $story->title,
+                    'author' => $story->author,
+                    'description' => $story->description,
+                    'image_path' => $story->base_url . $story->file_name,
+                    'created_at' => $story->created_at->format('Y-m-d H:i:s'),
+                    'favorites_count' => $story->favorites_count,
+                    'average_rating' => round($story->ratings->avg('rating') ?? 0, 1),
+                    'total_views' => $story->chapters->sum('views'),
+                    'total_chapters' => $story->chapters->count(),
+                    'categories' => $story->categories->map(function ($category) {
+                        return [
+                            'id' => $category->category_id,
+                            'title' => $category->title,
+                        ];
+                    }),
+                ];
+            });
+
+            return ResponseHelper::success($formattedStories, 'Lấy danh sách truyện được yêu thích thành công');
+        } catch (Exception $e) {
+            return ErrorHelper::serverError($e, 'Lỗi khi lấy danh sách truyện được yêu thích');
         }
     }
 }

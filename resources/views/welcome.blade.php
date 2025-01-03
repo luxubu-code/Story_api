@@ -90,6 +90,21 @@
                         <i class="bi bi-people"></i> Users
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.index') }}"
+                        class="nav-link {{ Request::routeIs('admin.*') ? 'active' : '' }}">
+                        <i class="bi bi-graph-up"></i>
+                        <span>Thống kê VIP</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('comment.index') }}"
+                        class="nav-link {{ Request::routeIs('comment.index') ? 'active' : '' }}">
+                        <i class="bi bi-chat"></i>
+                        <span>Bình luận</span>
+                    </a>
+                </li>
+
             </ul>
         </div>
 

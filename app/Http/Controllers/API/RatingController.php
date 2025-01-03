@@ -11,6 +11,7 @@ use App\Http\Helpers\ResponseHelper;
 use App\Models\Rating;
 use App\Models\Story;
 use App\Models\Ratings;
+use Illuminate\Support\Facades\DB;
 
 class RatingController extends Controller
 {
@@ -26,7 +27,31 @@ class RatingController extends Controller
             return ErrorHelper::serverError($e);
         }
     }
-
+    public function delete($id)
+    {
+        try {
+            DB::beginTransaction();
+            $user = auth('api')->user();
+            if (!$user) {
+                return ErrorHelper::unauthorized('Người dùng chưa được xác thực');
+            }
+            $rating = Ratings::find($id);
+            if ($rating->user_id !== $user->id) {
+                return ErrorHelper::response(
+                    'Bạn không có quyền xóa đánh giá này',
+                    403
+                );
+            }
+            $rating->delete();
+            DB::commit();
+            return ResponseHelper::success(
+                'Xóađánh giá thành công'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ErrorHelper::serverError($e, 'Không thể xóa đánh giá');
+        }
+    }
     public function ratings(Request $request)
     {
         try {

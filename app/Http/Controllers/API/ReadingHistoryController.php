@@ -14,18 +14,42 @@ use App\Models\ReadingHistory;
 use App\Models\Story;
 use App\Models\User;
 use Google\Api\ResourceDescriptor\History;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class ReadingHistoryController extends Controller
 {
+    // Trong controller, thay thế đoạn code hiện tại bằng:
     public function index()
     {
-        $user = auth('api')->user();
-        $history = ReadingHistory::where('user_id', $user->id)->with(['story', 'chapters'])->get();
-        return ResponseHelper::success(
-            HistoryResource::collection($history),
-            'Lấy lịch sử đọc thành công'
-        );
+        try {
+            $user = auth('api')->user();
+            if (!$user) {
+                Log::error('User not authenticated');
+                return ErrorHelper::unauthorized('Người dùng chưa đăng nhập', 401);
+            }
+
+            Log::info('User ID: ' . $user->id); // Thêm log để debug
+
+            $history = ReadingHistory::where('user_id', $user->id)
+                ->with(['story' => function ($query) {
+                    $query->select('story_id', 'title', 'base_url', 'file_name');
+                }])
+                ->get();
+
+            if ($history->isEmpty()) {
+                return ResponseHelper::success([], 'Không có lịch sử đọc');
+            }
+
+            return ResponseHelper::success(
+                HistoryResource::collection($history),
+                'Lấy lịch sử đọc thành công'
+            );
+        } catch (\Exception $e) {
+            Log::error('Reading History Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return ErrorHelper::serverError($e, 'Lỗi khi lấy lịch sử đọc');
+        }
     }
     public function store(Request $request)
     {

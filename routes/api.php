@@ -8,6 +8,7 @@ use App\Http\Controllers\API\ImageController;
 use App\Http\Controllers\API\StoryController;
 use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\API\VipSubscriptionController;
+use App\Http\Controllers\API\VipSubscriptionHistoryController;
 use App\Http\Controllers\ForgotPasswordController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,8 @@ Route::prefix('stories')->group(function () {
     Route::delete('/{id}', [StoryController::class, 'destroy']);
     Route::get('/search', [StoryController::class, 'search']);
 });
+Route::get('most', [StoryController::class, 'getMostFavorited']);
+Route::post('/view/{id}', [StoryController::class, 'read']);
 
 Route::get('/comment/{id}', [CommentController::class, 'index']);
 Route::middleware('auth:api')->prefix('comment')->group(function () {
@@ -60,6 +63,7 @@ Route::middleware('auth:api')->prefix('comment')->group(function () {
 // Routes for Ratings
 Route::middleware('auth:api')->post('/rating', [RatingController::class, 'ratings']);
 Route::get('/rating/{id}', [RatingController::class, 'index']);
+Route::delete('/rating/{id}', [RatingController::class, 'delete']);
 // Routes for Favorite Stories
 Route::middleware('auth:api')->prefix('favourite')->group(function () {
     Route::get('/', [FavoriteStoriesController::class, 'index']);
@@ -73,9 +77,19 @@ Route::middleware('auth:api')->prefix('history')->group(function () {
     Route::get('/', [ReadingHistoryController::class, 'index']);
     Route::post('/', [ReadingHistoryController::class, 'store']);
 });
-
 // Routes for Image Management
 Route::prefix('images')->group(function () {
     Route::post('/{id}', [ImageController::class, 'upload']);
     Route::get('/{id}', [ImageController::class, 'index']);
 });
+
+
+// VIP Subscription History Routes
+Route::middleware('auth:api')->prefix('vip/history')->group(function () {
+    Route::get('/', [VipSubscriptionHistoryController::class, 'index']);
+    Route::get('/active', [VipSubscriptionHistoryController::class, 'getActiveSubscription']);
+    Route::get('/{id}', [VipSubscriptionHistoryController::class, 'show']);
+});
+
+
+Route::get('/all-comment', [CommentController::class, 'getAllComment']);

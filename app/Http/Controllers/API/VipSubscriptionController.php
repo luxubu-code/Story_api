@@ -70,14 +70,20 @@ class VipSubscriptionController extends Controller
                     'payment_status' => 'completed',
                     'vnpay_transaction_id' => $vnp_TransactionNo
                 ]);
-
+                $user = $subscription->user;
+                $user->update([
+                    'is_vip' => true,
+                    'vip_expires_at' => $subscription->end_date
+                ]);
                 return response()->json([
                     'success' => true,
                     'message' => 'Payment processed successfully',
                     'data' => [
                         'subscription_id' => $subscription->id,
                         'status' => 'completed',
-                        'transaction_id' => $vnp_TransactionNo
+                        'transaction_id' => $vnp_TransactionNo,
+                        'is_vip' => true,
+                        'vip_expires_at' => $subscription->end_date
                     ]
                 ]);
             }

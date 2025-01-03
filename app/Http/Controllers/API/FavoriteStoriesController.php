@@ -10,25 +10,81 @@ use Illuminate\Http\Request;
 use App\Models\FavoriteStories;
 use App\Models\Story;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class FavoriteStoriesController extends Controller
 {
     public function index()
     {
-        $user = auth('api')->user();
-        $favourite_stories = FavoriteStories::with('story')->where('user_id', $user->id)->get();
+        try {
+            // Kiểm tra xác thực người dùng
+            $user = auth('api')->user();
+            if (!$user) {
+                Log::error('User authentication failed in FavoriteStories index');
+                return ErrorHelper::unauthorized('Unauthorized access', 401);
+            }
 
-        $favourite_stories_data = $favourite_stories->map(function ($favouriteStory) {
-            return [
-                'id' => $favouriteStory->story_id,
-                'title' => $favouriteStory->story->title,
-                'image_path' => $favouriteStory->base_url . $favouriteStory->file_name,
-                'read_at' => Carbon::parse($favouriteStory->story->read_at)->format('Y-m-d'),
-                'updated_at' => Carbon::parse($favouriteStory->story->updated_at)->format('Y-m-d')
-            ];
-        });
-        return ResponseHelper::success($favourite_stories_data, 'Success get favourite stories');
+            // Log thông tin để debug
+            Log::info('Fetching favorites for user: ' . $user->id);
+
+            // Lấy danh sách truyện yêu thích với relationship
+            $favourite_stories = FavoriteStories::with(['story' => function ($query) {
+                $query->select('story_id', 'title', 'updated_at');
+            }])->where('user_id', $user->id)->get();
+
+            // Kiểm tra nếu không có dữ liệu
+            if ($favourite_stories->isEmpty()) {
+                return ResponseHelper::success([], 'No favorite stories found');
+            }
+
+            // Transform dữ liệu với xử lý lỗi
+            $favourite_stories_data = $favourite_stories->map(function ($favouriteStory) {
+                try {
+                    // Kiểm tra story relationship
+                    if (!$favouriteStory->story) {
+                        Log::warning('Story not found for favorite ID: ' . $favouriteStory->id);
+                        return null;
+                    }
+
+                    return [
+                        'id' => $favouriteStory->story_id,
+                        'title' => $favouriteStory->story->title,
+                        'image_path' => $favouriteStory->base_url . $favouriteStory->file_name,
+                        'read_at' => $favouriteStory->read_at ?
+                            Carbon::parse($favouriteStory->story->read_at)->format('Y-m-d') : null,
+                        'updated_at' => $favouriteStory->story->updated_at ?
+                            Carbon::parse($favouriteStory->story->updated_at)->format('Y-m-d') : null,
+                        'categories' => $favouriteStory->story->categories->map(
+                            function ($categories) {
+                                return [
+                                    'title' => $categories->title,
+                                ];
+                            }
+                        ),
+                    ];
+                } catch (\Exception $e) {
+                    Log::error('Error transforming favorite story: ' . $e->getMessage(), [
+                        'story_id' => $favouriteStory->story_id,
+                        'user_id' => $favouriteStory->user_id
+                    ]);
+                    return null;
+                }
+            })->filter(); // Lọc bỏ các giá trị null
+
+            // Log kết quả để debug
+            Log::info('Successfully fetched favorites', [
+                'count' => $favourite_stories_data->count()
+            ]);
+
+            return ResponseHelper::success($favourite_stories_data, 'Success get favourite stories');
+        } catch (\Exception $e) {
+            Log::error('Error in FavoriteStories index: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return ErrorHelper::serverError($e, 'Error fetching favorite stories');
+        }
     }
+
     public function exists($id)
     {
         $user = auth('api')->user();

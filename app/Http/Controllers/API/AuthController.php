@@ -77,14 +77,6 @@ class AuthController extends Controller
 
             $token = $user->createToken('googleAuth')->accessToken;
             return ResponseHelper::success(new UserResource($user), 'Đăng nhập Google thành công', 200, $token);
-
-            // return response()->json([
-            //     'response_code' => '200',
-            //     'status' => 'success',
-            //     'message' => 'Đăng nhập Google thành công',
-            //     'user' => new UserResource($user),
-            //     'access_token' => $token
-            // ]);
         } catch (\Exception $e) {
             Log::error('Google Auth Error: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -109,7 +101,7 @@ class AuthController extends Controller
             }
 
             $token = $user->createToken('authToken')->accessToken;
-            return ResponseHelper::success(new UserResource($user), 'Đăng nhập Google thành công', 200, $token);
+            return ResponseHelper::success(new UserResource($user), 'Đăng nhập thành công', 200, $token);
         } catch (\Exception $e) {
             return ErrorHelper::serverError($e, 'Lỗi đăng nhập');
         }

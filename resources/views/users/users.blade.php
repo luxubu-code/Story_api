@@ -11,11 +11,7 @@
                     <h1 class="h3 text-primary">
                         <i class="fas fa-users me-2"></i>Danh Sách Người Dùng
                     </h1>
-                    <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Quay lại
-                    </a>
                 </div>
-
                 <!-- User List -->
                 <div class="card shadow-sm">
                     <div class="card-body">

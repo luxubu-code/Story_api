@@ -25,7 +25,8 @@ class User extends Authenticatable
         'fcm_token',
         'avatar_url',
         'date_of_birth',
-        'public_id'
+        'public_id',
+        'is_vip',
     ];
 
     /**
@@ -46,10 +47,12 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'is_vip' => 'boolean',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
+
     public function ratings()
     {
         return $this->hasMany(Ratings::class, 'user_id', 'id');
@@ -57,5 +60,22 @@ class User extends Authenticatable
     public function comments()
     {
         return $this->hasMany(Comment::class, 'user_id', 'id');
+    }
+    public function vipSubscriptions()
+    {
+        return $this->hasMany(UserVipSubscription::class);
+    }
+
+    public function activeVipSubscription()
+    {
+        return $this->vipSubscriptions()
+            ->where('payment_status', 'completed')
+            ->where('end_date', '>', now())
+            ->latest();
+    }
+
+    public function getIsVipAttribute()
+    {
+        return $this->activeVipSubscription()->exists();
     }
 }
