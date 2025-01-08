@@ -6,12 +6,13 @@ use Kreait\Firebase\Factory;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Exception\MessagingException;
 use Illuminate\Support\Facades\Log;
+
 class SendNotificationService
 {
     public static function sendNotification($title, $body, $deviceToken)
     {
         try {
-            $firebase = (new Factory())->withServiceAccount(base_path('test-d7f66-firebase-adminsdk-unj0s-a7d3c8c078.json'));
+            $firebase = (new Factory())->withServiceAccount(base_path('story-80873-firebase-adminsdk-3gcxu-60a4575575.json'));
             $messaging = $firebase->createMessaging();
 
             $message = CloudMessage::withTarget('token', $deviceToken)

@@ -22,9 +22,9 @@ class StoryWebController extends StoryController
     {
         $this->imageController = $imageController;
     }
-    public function showAll()
+    public function showAll(Request $request)
     {
-        $response = parent::index();
+        $response = parent::index($request);
         $storiesArray = json_decode(json_encode($response->getData()->data), true);
         $categories = Category::all();
         return view('stories.index', compact('storiesArray', 'categories'));

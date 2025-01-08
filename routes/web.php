@@ -3,6 +3,7 @@
     use App\Http\Controllers\ProfileController;
     use App\Http\Controllers\WEB\CommentWebController;
     use App\Http\Controllers\Web\FavoriteWebController;
+    use App\Http\Controllers\WEB\RatingWebController;
     use App\Http\Controllers\WEB\StoryWebController;
     use App\Http\Controllers\WEB\UserWebController;
     use App\Http\Controllers\WEB\ChapterWebController;
@@ -67,9 +68,10 @@
     Route::get('/admin', [VipSubscriptionStatsController::class, 'index'])->name('admin.index');
 
 
-    // Route::get('/comment-all', [CommentWebController::class, 'getAll'])->name(name: 'comment.index');
-    Route::get('/commentalll', [CommentWebController::class, 'getAll'])->name('comment.index');
+    Route::get('/comments', [CommentWebController::class, 'getAll'])->name('comment.index');
+    Route::delete('/comments-web/{id}', [CommentWebController::class, 'deleteComment'])->name('comment.delete');
 
-
+    Route::get('/ratings', [RatingWebController::class, 'getAll'])->name('rating.index');
+    Route::delete('/rating-web/{id}', [RatingWebController::class, 'deleteRating'])->name('rating.delete');
 
     require __DIR__ . '/auth.php';

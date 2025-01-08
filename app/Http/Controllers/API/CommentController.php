@@ -21,8 +21,7 @@ class CommentController extends Controller
     {
         try {
             $comments = Comment::where('story_id', $id)
-                ->with('user')
-                ->with('replies')
+                ->with(['user', 'story', 'replies'])
                 ->whereNull('parent_id')
                 ->orderBy('created_at', 'desc')
                 ->paginate(15);
@@ -83,10 +82,32 @@ class CommentController extends Controller
             );
         }
     }
-    public function getAllComment()
+    public function getAllComment(Request $request)
     {
         // $comment = Comment::all();
-        $comment = Comment::with('user')->get();
-        return ResponseHelper::success(CommentResource::collection($comment), 'Lấy dữ liệu thành công');
+        try {
+            $query = Comment::with('user');
+            // Xử lý sắp xếp dựa trên giá trị sort_by từ request
+            switch ($request->sort_by) {
+                case 'oldest': // Cũ nhất
+                    $query->oldest();  // Sắp xếp theo created_at tăng dần
+                    break;
+                case 'comment_high': // bình luận 
+                    $query->orderBy('likes', 'desc'); // Sắp xếp rating giảm dần
+                    break;
+                case 'comment_low': // bình luận
+                    $query->orWhereBetween('created_at', ['2025-01-01', '2025-01-05']);
+                    break;
+                default: // Mặc định - mới nhất
+                    $query->orderBy('created_at', 'desc');
+                    // $query->latest(); // Sắp xếp theo created_at giảm dần
+                    break;
+            }
+
+            $comment = $query->get();
+            return CommentResource::collection($comment);
+        } catch (\Exception $e) {
+            return ErrorHelper::serverError($e, 'Không thể lấy danh sách bình luận');
+        }
     }
 }

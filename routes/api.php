@@ -50,9 +50,10 @@ Route::prefix('stories')->group(function () {
     Route::put('/{id}', [StoryController::class, 'update']);
     Route::delete('/{id}', [StoryController::class, 'destroy']);
     Route::get('/search', [StoryController::class, 'search']);
+    Route::get('/shows/{id}', [StoryController::class, 'show']);
+    Route::post('/view/{id}', [StoryController::class, 'read']);
 });
 Route::get('most', [StoryController::class, 'getMostFavorited']);
-Route::post('/view/{id}', [StoryController::class, 'read']);
 
 Route::get('/comment/{id}', [CommentController::class, 'index']);
 Route::middleware('auth:api')->prefix('comment')->group(function () {
@@ -90,6 +91,3 @@ Route::middleware('auth:api')->prefix('vip/history')->group(function () {
     Route::get('/active', [VipSubscriptionHistoryController::class, 'getActiveSubscription']);
     Route::get('/{id}', [VipSubscriptionHistoryController::class, 'show']);
 });
-
-
-Route::get('/all-comment', [CommentController::class, 'getAllComment']);

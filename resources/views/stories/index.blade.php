@@ -3,27 +3,26 @@
 @section('title', 'Story Management')
 
 @section('content')
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
 
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-    <!-- Header section with search bar and add new button -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="h3 mb-0">Manage Stories</h1>
                 <div class="d-flex gap-3">
+                    <div class="col-md-3">
+                        <select class="form-select" name="sort_by">
+                            <option value="newest" {{ request('sort_by') == 'newest' ? 'selected' : '' }}>Mới nhất</option>
+                            <option value="oldest" {{ request('sort_by') == 'oldest' ? 'selected' : '' }}>Cũ nhất</option>
+                            <option value="likes_high" {{ request('sort_by') == 'likes_high' ? 'selected' : '' }}>Yêu thích
+                                nhất</option>
+                            <option value="likes_low" {{ request('sort_by') == 'likes_low' ? 'selected' : '' }}>Ít yêu thích
+                                nhất</option>
+                            <option value="rating_high" {{ request('sort_by') == 'rating_high' ? 'selected' : '' }}>Đánh giá
+                                cao nhất</option>
+                            <option value="rating_low" {{ request('sort_by') == 'rating_low' ? 'selected' : '' }}>Đánh giá
+                                thấp nhất</option>
+                        </select>
+                    </div>
                     <!-- Enhanced search form -->
                     <form class="d-flex" method="GET" action="{{ route('stories.search') }}">
                         <div class="input-group">
@@ -200,6 +199,12 @@
                 preview.src = URL.createObjectURL(event.target.files[0]);
                 previewDiv.classList.remove('d-none');
             }
+            // Lắng nghe sự kiện thay đổi giá trị của select box
+            document.querySelector('select[name="sort_by"]').addEventListener('change', function() {
+                // Khi người dùng chọn option mới, chuyển hướng trang với tham số sort_by
+                // Ví dụ: /ratings?sort_by=oldest
+                window.location.href = `${window.location.pathname}?sort_by=${this.value}`;
+            });
         </script>
     @endpush
 

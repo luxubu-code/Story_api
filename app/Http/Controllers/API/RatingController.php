@@ -92,14 +92,29 @@ class RatingController extends Controller
             return ErrorHelper::serverError($e);
         }
     }
-    public function getAllRating()
+    public function getAllRating(Request $request)
     {
         try {
-            $ratings = Ratings::all();
-            return ResponseHelper::success(
-                RatingResource::collection($ratings),
-                'Lấy danh sách đánh giá thành công'
-            );
+            // Tạo query lấy dữ liệu ratings kèm theo thông tin story và user liên quan
+            $query = Ratings::with(['story', 'user']);
+
+            // Xử lý sắp xếp dựa trên giá trị sort_by từ request
+            switch ($request->sort_by) {
+                case 'oldest': // Cũ nhất
+                    $query->oldest();  // Sắp xếp theo created_at tăng dần
+                    break;
+                case 'rating_high': // Đánh giá cao nhất
+                    $query->orderBy('rating', 'desc'); // Sắp xếp rating giảm dần
+                    break;
+                case 'rating_low': // Đánh giá thấp nhất  
+                    $query->orderBy('rating', 'asc'); // Sắp xếp rating tăng dần
+                    break;
+                default: // Mặc định - mới nhất
+                    $query->latest(); // Sắp xếp theo created_at giảm dần
+                    break;
+            }
+            $ratings = $query->get();
+            return RatingResource::collection($ratings);
         } catch (\Exception $e) {
             return ErrorHelper::serverError($e);
         }

@@ -39,6 +39,22 @@ class ImageController extends Controller
             'title' => 'required',
             'file_zip' => 'required|file|mimes:zip|max:10240',
         ]);
+        // Làm sạch tiêu đề, loại bỏ khoảng trắng thừa
+        $cleanTitle = trim($request->title);
+
+        // Kiểm tra trùng lặp không phân biệt hoa thường
+        $duplicateCheck = Chapter::where('story_id', $story_id)
+            ->whereRaw('LOWER(TRIM(title)) = ?', [strtolower($cleanTitle)])
+            ->first();
+        // $duplicateCheck = Chapter::where('title', $request->title)->where('story_id', $story_id)->first();
+        if ($duplicateCheck) {
+            return ErrorHelper::badRequest('Chapter title already exists.');
+        }
+        // Log what was found
+        Log::info('Duplicate check result', [
+            'duplicate_found' => !is_null($duplicateCheck),
+            'existing_chapter' => $duplicateCheck
+        ]);
         try {
             $chapter = Chapter::create([
                 'title' => $request->title,
@@ -46,9 +62,9 @@ class ImageController extends Controller
             ]);
             $favoriteStories = FavoriteStories::where('story_id', $story->story_id)->with('user')->get();
             foreach ($favoriteStories as $favorite) {
-                $notificationSent =  SendNotificationService::sendNotification(
-                    'A new chapter has been added to the story: ' . $story->title,
-                    'A new chapter title :' . $chapter->title,
+                $notificationSent = SendNotificationService::sendNotification(
+                    'Chương mới đã được thêm vào: ' . $story->title,
+                    'Tên chương mới: ' . $chapter->title,
                     $favorite->user->fcm_token
                 );
 

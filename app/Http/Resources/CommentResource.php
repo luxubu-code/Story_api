@@ -22,6 +22,10 @@ class CommentResource extends JsonResource
             'like' => $this->likes,
             'parent_id' => $this->parent_id,
             'created_at' => Carbon::parse($this->create_at)->format('Y-m-d'),
+            'story' => [
+                'id' => $this->story->story_id,
+                'title' => $this->story->title,
+            ],
             'user' => [
                 'id' => $this->user_id,
                 'name' => $this->user->name,

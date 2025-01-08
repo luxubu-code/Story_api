@@ -21,13 +21,52 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 class StoryController extends Controller
 
 {
+    // public function index(): JsonResponse
+    // {
+    //     try {
+    //         $datastories = Story::with(['ratings', 'favorites', 'categories', 'chapters'])->get();
+    //         $stories = $datastories->map(function ($story) {
+    //             $averageRating = $story->ratings->avg('rating') ?? 0;
+    //             return [
+    //                 'id' => $story->story_id,
+    //                 'title' => $story->title,
+    //                 'author' => $story->author,
+    //                 'views' => $story->views ?? 0,
+    //                 'description' => $story->description,
+    //                 'image_path' => $story->base_url . $story->file_name,
+    //                 'created_at' => $story->created_at,
+    //                 'averageRating' => $averageRating,
+    //                 'totalChapter' => $story->chapters->count(),
+    //                 'favourite' => $story->favorites->count(),
+    //                 'categories' => $story->categories->map(function ($categories) {
+    //                     return [
+    //                         'title' => $categories->title
+    //                     ];
+    //                 })
+    //             ];
+    //         });
+    //         return ResponseHelper::success($stories, 'Lấy danh sách truyện thành công');
+    //     } catch (\Exception $e) {
+    //         return ErrorHelper::serverError($e, 'Lỗi khi tải danh sách truyện');
+    //     }
+    // }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $datastories = Story::with(['ratings', 'favorites', 'categories', 'chapters'])->get();
-            $stories = $datastories->map(function ($story) {
-                $averageRating = $story->ratings->avg('rating') ?? 0;
+            // Start with a base query including essential relationships
+            $storiesQuery = Story::with([
+                'ratings',
+                'favorites',
+                'categories',
+                'chapters'
+            ]);
+
+            // Get the raw data first before applying transformations
+            $stories = $storiesQuery->get();
+
+            // Transform the stories data with calculated fields
+            $transformedStories = $stories->map(function ($story) {
                 return [
                     'id' => $story->story_id,
                     'title' => $story->title,
@@ -36,9 +75,9 @@ class StoryController extends Controller
                     'description' => $story->description,
                     'image_path' => $story->base_url . $story->file_name,
                     'created_at' => $story->created_at,
-                    'averageRating' => $averageRating,
+                    'averageRating' => $story->ratings->avg('rating') ?? 0,
                     'totalChapter' => $story->chapters->count(),
-                    'favourite' => $story->favorites->count(),
+                    'favouriteCount' => $story->favorites->count(),
                     'categories' => $story->categories->map(function ($categories) {
                         return [
                             'title' => $categories->title
@@ -46,11 +85,45 @@ class StoryController extends Controller
                     })
                 ];
             });
-            return ResponseHelper::success($stories, 'Lấy danh sách truyện thành công');
+
+            // Apply sorting based on request parameter
+            $sortedStories = $this->applySorting($transformedStories, $request->sort_by);
+
+            return ResponseHelper::success(
+                $sortedStories,
+                'Stories retrieved successfully'
+            );
         } catch (\Exception $e) {
-            return ErrorHelper::serverError($e, 'Lỗi khi tải danh sách truyện');
+            return ErrorHelper::serverError(
+                $e,
+                'Error occurred while retrieving stories'
+            );
         }
     }
+    private function applySorting($stories, $sortBy)
+    {
+        switch ($sortBy) {
+            case 'oldest':
+                return $stories->sortBy('created_at')->values(); // chuyển từ collection sang array để trả về dữ liệu ko có số ở đầu 
+
+            case 'likes_high':
+                return $stories->sortByDesc('favouriteCount')->values();
+
+            case 'likes_low':
+                return $stories->sortBy('favouriteCount')->values();
+
+            case 'rating_high':
+                return $stories->sortByDesc('averageRating')->values();
+
+            case 'rating_low':
+                return $stories->sortBy('averageRating')->values();
+
+            case 'newest':
+            default:
+                return $stories->sortByDesc('created_at')->values();
+        }
+    }
+
     private function extractPublicIdFromUrl($url)
     {
         $withoutExtension = preg_replace('/\.[^.]+$/', '', $url);
@@ -78,7 +151,7 @@ class StoryController extends Controller
                 'views' => $views ?? 0,
                 'image_path' => $story->base_url . $story->file_name ?? 'null',
                 'averageRating' => $averageRating,
-                'favourite' => $favouriteCount,
+                'favouriteCount' => $favouriteCount,
                 'chapter' => $story->chapters->map(
                     function ($chapter) {
                         return [
@@ -286,42 +359,6 @@ class StoryController extends Controller
             return ResponseHelper::success($stories, 'Tìm kiếm truyện thành công');
         } catch (Exception $e) {
             return ErrorHelper::serverError($e, 'Lỗi khi tìm kiếm truyện');
-        }
-    }
-    public function getMostFavorited(): JsonResponse
-    {
-        try {
-            $stories = Story::withCount('ratings')
-                ->with(['ratings', 'categories', 'chapters'])
-                ->orderBy('ratings_count', 'desc')
-                ->take(10)
-                ->get();
-
-            // Định dạng dữ liệu trả về
-            $formattedStories = $stories->map(function ($story) {
-                return [
-                    'id' => $story->story_id,
-                    'title' => $story->title,
-                    'author' => $story->author,
-                    'description' => $story->description,
-                    'image_path' => $story->base_url . $story->file_name,
-                    'created_at' => $story->created_at->format('Y-m-d H:i:s'),
-                    'favorites_count' => $story->favorites_count,
-                    'average_rating' => round($story->ratings->avg('rating') ?? 0, 1),
-                    'total_views' => $story->chapters->sum('views'),
-                    'total_chapters' => $story->chapters->count(),
-                    'categories' => $story->categories->map(function ($category) {
-                        return [
-                            'id' => $category->category_id,
-                            'title' => $category->title,
-                        ];
-                    }),
-                ];
-            });
-
-            return ResponseHelper::success($formattedStories, 'Lấy danh sách truyện được yêu thích thành công');
-        } catch (Exception $e) {
-            return ErrorHelper::serverError($e, 'Lỗi khi lấy danh sách truyện được yêu thích');
         }
     }
 }

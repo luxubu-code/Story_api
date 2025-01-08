@@ -1,32 +1,21 @@
 @extends('welcome')
-@section('title', 'Bình luận')
+@section('title', 'Đánh giá')
 
 @section('content')
     <div class="container">
         <div class="row">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h3 text-primary">
-                    <i class="bi bi-chat"></i> Danh Sách Bình Luận
+                    <i class="bi bi-star"></i> Danh Sách Đánh Giá
                 </h1>
                 <div class="col-md-3">
-
                     <label class="form-label">Sắp xếp theo : </label>
                     <select class="form-select" name="sort_by">
-                        <option value="newest" {{ request('sort_by') == 'newest' ? 'selected' : '' }}>Mới nhất</option>
-                        <option value="oldest" {{ request('sort_by') == 'oldest' ? 'selected' : '' }}>Cũ nhất</option>
-                        <option value="comment_high" {{ request('sort_by') == 'likes_high' ? 'selected' : '' }}>Lượt thích
-                            cao
-                            nhất</option>
-                        <option value="comment_low" {{ request('sort_by') == 'likes_low' ? 'selected' : '' }}>Lượt thích
-                            thấp
-                            nhất</option>
-                    </select>
-                    {{-- <select class="form-select" name="sort_by">
                         <option value="newest">Mới nhất</option>
                         <option value="oldest">Cũ nhất</option>
-                        <option value="comment_high">Đánh giá cao nhất</option>
-                        <option value="comment_low">Đánh giá thấp nhất</option>
-                    </select> --}}
+                        <option value="rating_high">Đánh giá cao nhất</option>
+                        <option value="rating_low">Đánh giá thấp nhất</option>
+                    </select>
                 </div>
             </div>
             <div class="table-responsive">
@@ -34,37 +23,50 @@
                     <thead class="table-light">
                         <tr>
                             <th>#</th>
-                            <th>Truyện được bình luận</th>
-                            <th>Nội dung bình luận</th>
-                            <th>Người dùng bình luận</th>
-                            <th>Ngày bình luận</th>
+                            <th>Nội dung đánh giá</th>
+                            <th>Số sao đánh giá</th>
+                            <th>Người dùng đánh giá</th>
+                            <th>Truyện được đánh giá</th>
+                            <th>Thời gian</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($comments as $index => $comment)
+                        @foreach ($ratings as $index => $rating)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>
-                                    {{ $comment->story->title }}
-                                <td>
-                                    {{ $comment->content }}
+                                    {{ $rating->title }}
                                 </td>
                                 <td>
-                                    {{ $comment->user->name }}
+                                    {{ $rating->rating }} <i class="fas fa-star text-warning"></i>
                                 </td>
                                 <td>
-                                    {{ $comment->created_at->format('d/m/Y H:i:s') }}
+                                    {{ $rating->user->name }}
+                                </td>
+                                <td>
+                                    @if ($rating->story->title)
+                                        {{ $rating->story->title }}
+                                    @endif
+                                </td>
+                                <td>
+                                    <div>
+                                        {{ $rating->created_at->format('d/m/Y H:i') }}
+                                        @if ($rating->updated_at->ne($rating->created_at))
+                                            <br>
+                                            {{ $rating->updated_at->format('d/m/Y H:i') }}
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <form action="{{ route('comment.delete', $comment->id) }}" method="POST"
+                                        <form action="{{ route('rating.delete', $rating->user_id) }}" method="POST"
                                             style="display: inline-block;">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-outline-danger btn-sm transition"
                                                 data-bs-toggle="tooltip" data-bs-placement="top" title="Delete Rating"
-                                                onclick="return confirm('Are you sure you want to delete this comment?')">
+                                                onclick="return confirm('Are you sure you want to delete this rating?')">
                                                 <i class="fas fa-trash me-1"></i> Delete
                                             </button>
                                         </form>
