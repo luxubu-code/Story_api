@@ -35,6 +35,7 @@ class ImageController extends Controller
 
     {
         $story = Story::findOrFail($story_id);
+
         ValidationHelper::make($request->all(), [
             'title' => 'required',
             'file_zip' => 'required|file|mimes:zip|max:10240',
@@ -56,9 +57,16 @@ class ImageController extends Controller
             'existing_chapter' => $duplicateCheck
         ]);
         try {
+            $is_vip = $story->is_vip == true;
+            if ($is_vip) {
+                $vip_expiration = now()->addMinute(1);
+            }
             $chapter = Chapter::create([
                 'title' => $request->title,
                 'story_id' => $story_id,
+                'is_vip' => $is_vip,
+                'vip_expiration' => $vip_expiration,
+
             ]);
             $favoriteStories = FavoriteStories::where('story_id', $story->story_id)->with('user')->get();
             foreach ($favoriteStories as $favorite) {

@@ -4,13 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Chapter;
+use PhpParser\Node\Expr\Cast;
 
 class Story extends Model
 {
     protected $table = 'stories';
     protected $primaryKey = 'story_id';
-    protected $fillable = ['story_id', 'title', 'author', 'description',  'file_name', 'base_url', 'views', 'status', 'created_at', 'updated_at'];
+    protected $fillable = ['story_id', 'title', 'author', 'description',  'file_name', 'base_url', 'status', 'is_vip', 'created_at', 'updated_at'];
 
+    protected $casts = ['is_vip' => 'boolean'];
     public function chapters()
     {
         return $this->hasMany(Chapter::class, 'story_id', 'story_id');

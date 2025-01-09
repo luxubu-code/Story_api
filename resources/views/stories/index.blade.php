@@ -91,10 +91,12 @@
 
                                 </tr>
                             @endforeach
+
                         </tbody>
                     </table>
                 </div>
             @endif
+
         </div>
     </div>
 
@@ -125,6 +127,10 @@
                             <textarea class="form-control" name="description" rows="4" required></textarea>
                         </div>
                         <div class="mb-4">
+                            <label class="form-label fw-bold">VIP</label>
+                            <input class="form-check-input" type="checkbox" name="is_vip" value="1" required>
+                        </div>
+                        <div class="mb-4">
                             <label class="form-label fw-bold">Categories</label>
                             <div class="row row-cols-2 row-cols-md-3 g-3">
                                 @foreach ($categories as $category)
@@ -139,6 +145,7 @@
                                         </div>
                                     </div>
                                 @endforeach
+
                             </div>
                         </div>
                         <div class="mb-4">

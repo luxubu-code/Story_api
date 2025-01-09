@@ -74,6 +74,7 @@ class StoryController extends Controller
                     'views' => $story->chapters->sum('views') ?? 0,
                     'description' => $story->description,
                     'image_path' => $story->base_url . $story->file_name,
+                    'is_vip' => $story->is_vip,
                     'created_at' => $story->created_at,
                     'averageRating' => $story->ratings->avg('rating') ?? 0,
                     'totalChapter' => $story->chapters->count(),
@@ -147,6 +148,7 @@ class StoryController extends Controller
                 'title' => $story->title,
                 'author' => $story->author,
                 'description' => $story->description,
+                'is_vip' => $story->is_vip,
                 'status' => $story->status ?? 0,
                 'views' => $views ?? 0,
                 'image_path' => $story->base_url . $story->file_name ?? 'null',
@@ -158,6 +160,7 @@ class StoryController extends Controller
                             'id' => $chapter->chapter_id,
                             'title' => $chapter->title,
                             'views' => $chapter->views ?? 0,
+                            'is_vip' => $chapter->is_vip,
                             'created_at' => $chapter->created_at
                         ];
                     }
@@ -199,6 +202,7 @@ class StoryController extends Controller
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
                 'categories' => 'required|array',
                 'categories.*' => 'exists:categories,category_id',
+                'is_vip' => 'boolean'
             ]);
             $duplicateCheck = Story::where(function ($query) use ($request) {
                 $query->where('title', $request->title)
@@ -232,7 +236,8 @@ class StoryController extends Controller
                 'author' => $request->author,
                 'description' => $request->description,
                 'base_url' => $baseUrl,
-                'file_name' => $fileName
+                'file_name' => $fileName,
+                'is_vip' => $request->is_vip ?? false
             ]);
             $story->categories()->attach($request->categories);
             return ResponseHelper::success($story, 'Thêm truyện mới thành công');
